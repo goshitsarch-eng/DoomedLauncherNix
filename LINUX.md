@@ -115,3 +115,5 @@ Inside that sandbox the launcher:
 
 image::docs/linux-screenshot.png[Get mods dialog on Linux]
 
+image::docs/linux-main-window.png[GTK main window on Linux]
+

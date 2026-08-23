@@ -15,6 +15,9 @@ frontend that can also run as a Flatpak.
 image::docs/linux-screenshot.png[Get mods on Linux]
 *Get mods* on Linux: featured downloads from idgames, GitHub, Romero Games, plus community sites such as ModDB when a direct zip is not available.
 
+image::docs/linux-main-window.png[Linux GTK main window]
+The GTK 4 + libadwaita main window. Setup assistant, Get mods, downloads, and Play sit in the header; IWADs and the Id Games tab are in the sidebar.
+
 image::https://i.imgur.com/TIg4kNK.png[IWads Tile View Showcase]
 Large tile view for IWads tab. IWADs such as _Freedoom_ and _Heretic_ can be played with Doom Launcher.
 
