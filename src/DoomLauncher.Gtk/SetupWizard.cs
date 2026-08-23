@@ -50,7 +50,7 @@ namespace DoomLauncher.Linux
         public SetupWizardUi(SetupWizardCallbacks host)
         {
             m_host = host;
-            m_window = GtkUtil.ModalWindow(host.Window, "Setup assistant", 760, 680);
+            m_window = GtkUtil.AdwModalWindow(host.Window, "Setup assistant", 760, 680);
 
             var header = Adw.HeaderBar.New();
             header.SetShowEndTitleButtons(true);
@@ -95,7 +95,7 @@ namespace DoomLauncher.Linux
             var toolbar = Adw.ToolbarView.New();
             toolbar.AddTopBar(header);
             toolbar.SetContent(body);
-            m_window.SetChild(toolbar);
+            ((Adw.Window)m_window).SetContent(toolbar);
             ShowPage(0);
             RefreshPorts();
             RefreshIwads();

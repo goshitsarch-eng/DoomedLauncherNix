@@ -15,7 +15,7 @@ namespace DoomLauncher.Handlers.Sync
             var entry = reader.Entries.FirstOrDefault(e => e.Name.ToLower().Equals("gameconf"));
             if (entry != null)
             {
-                var json = entry.ReadString(Encoding.UTF7);
+                var json = entry.ReadString(Encoding.UTF8);
 
                 try
                 {

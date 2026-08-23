@@ -255,7 +255,12 @@ namespace DoomLauncher.Linux
             while (child != null)
             {
                 var next = child.GetNextSibling();
-                list.Remove(child);
+                // Only rows are managed children of the ListBox. Other widgets
+                // (e.g. a Popover parented to the list for a context menu) must
+                // not be passed to Remove(), which would emit
+                // "Tried to remove non-child" warnings and leave them orphaned.
+                if (child is Gtk.ListBoxRow)
+                    list.Remove(child);
                 child = next;
             }
         }
@@ -268,7 +273,8 @@ namespace DoomLauncher.Linux
             while (child != null)
             {
                 var next = child.GetNextSibling();
-                flow.Remove(child);
+                if (child is Gtk.FlowBoxChild)
+                    flow.Remove(child);
                 child = next;
             }
         }
@@ -347,6 +353,20 @@ namespace DoomLauncher.Linux
         public static Gtk.Window ModalWindow(Gtk.Window parent, string title, int width, int height)
         {
             var window = Gtk.Window.New();
+            window.SetTitle(title);
+            window.SetDefaultSize(width, height);
+            window.SetModal(true);
+            window.SetTransientFor(parent);
+            window.SetResizable(true);
+            return window;
+        }
+
+        // Adwaita window with no separate native titlebar. Use this (with SetContent)
+        // for windows that embed their own Adw.HeaderBar, so they don't end up with a
+        // second title bar and duplicate window controls stacked on top.
+        public static Adw.Window AdwModalWindow(Gtk.Window parent, string title, int width, int height)
+        {
+            var window = Adw.Window.New();
             window.SetTitle(title);
             window.SetDefaultSize(width, height);
             window.SetModal(true);

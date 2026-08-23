@@ -97,7 +97,7 @@ namespace DoomLauncher.Adapters.Launch
                     {
                         if (entry.ExtractRequired)
                         {
-                            string extractFile = Path.Combine(directories.TempDirectory.GetFullPath(), entry.Name);
+                            string extractFile = Path.Combine(directories.TempDirectory.GetFullPath(), ArchivePath.SafeFileName(entry.Name));
                             if (m_extractFiles)
                                 entry.ExtractToFileForceOverwrite(extractFile, throwIfInUse: false);
                             launchFiles.Add(extractFile);

@@ -332,3 +332,7 @@ ASALocalRun/
 .localhistory/
 
 ReleaseBuild/
+
+# Flatpak build artifacts
+/build-dir/
+/.flatpak-builder/

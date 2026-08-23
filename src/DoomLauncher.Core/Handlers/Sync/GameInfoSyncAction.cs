@@ -18,7 +18,7 @@ namespace DoomLauncher.Handlers.Sync
             var entry = reader.Entries.FirstOrDefault(x => x.Name.ToLower().StartsWith("gameinfo"));
             if (entry != null)
             {
-                var text = entry.ReadString(Encoding.UTF7);
+                var text = entry.ReadString(Encoding.UTF8);
                 var mapping = ParseGameInfo(text);
 
                 if (mapping.TryGetValue("STARTUPTITLE", out var title) && !string.IsNullOrWhiteSpace(title))

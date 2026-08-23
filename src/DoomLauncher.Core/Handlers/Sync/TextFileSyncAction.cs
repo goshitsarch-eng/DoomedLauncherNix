@@ -19,7 +19,7 @@ namespace DoomLauncher.Handlers.Sync
         {
             var textInfos = from entry in reader.Entries
                             where isTxtFile(entry.FullName) || entry.FullName.ToLower().Equals("wadinfo")
-                            let info = m_parseTextFile(entry.ReadString(Encoding.UTF7))
+                            let info = m_parseTextFile(entry.ReadString(Encoding.UTF8))
                             orderby info.QualityScore descending
                             select info;
 

@@ -57,12 +57,17 @@ namespace DoomLauncher.Linux
         private bool m_sortDesc;
         private bool m_playAfterDownload;
         private string m_playAfterDownloadName;
+        private uint m_searchDebounceSource;
 
         public MainWindow(Adw.Application app, LaunchArgs launchArgs)
         {
             m_app = app;
             m_launchArgs = launchArgs;
-            Native = Gtk.ApplicationWindow.New(app);
+            // Use Adw.ApplicationWindow (not Gtk.ApplicationWindow) so the window has no
+            // separate native titlebar. A plain Gtk.ApplicationWindow keeps its own titlebar
+            // in addition to the Adw.HeaderBar placed in the content, producing two stacked
+            // title bars (and duplicate/"traffic light" window controls).
+            Native = Adw.ApplicationWindow.New(app);
             Native.SetTitle("Doom Launcher");
             m_ops = new LibraryOperations();
             m_ops.SyncProgress += (file, current, total) => GtkUtil.RunOnUi(() =>
@@ -98,7 +103,7 @@ namespace DoomLauncher.Linux
             m_search = Gtk.SearchEntry.New();
             m_search.SetPlaceholderText("Search title, author, filename...");
             m_search.Hexpand = true;
-            m_search.OnSearchChanged += (s, e) => ReloadCurrentTab();
+            m_search.OnSearchChanged += (s, e) => DebouncedReloadCurrentTab();
             m_search.OnActivate += (s, e) => ReloadCurrentTab();
             header.SetTitleWidget(m_search);
 
@@ -250,7 +255,7 @@ namespace DoomLauncher.Linux
 
             m_toasts = Adw.ToastOverlay.New();
             m_toasts.SetChild(content);
-            Native.SetChild(m_toasts);
+            ((Adw.ApplicationWindow)Native).SetContent(m_toasts);
 
             m_contextBox = Gtk.Box.New(Gtk.Orientation.Vertical, 0);
             m_contextMenu = Gtk.Popover.New();
@@ -449,6 +454,24 @@ namespace DoomLauncher.Linux
 
         private string CurrentTabTitle() => CurrentTab()?.Title ?? "Library";
 
+        // Coalesce rapid search keystrokes so a single reload runs after the
+        // user pauses, instead of a full re-query + widget rebuild per keypress.
+        private void DebouncedReloadCurrentTab()
+        {
+            if (m_searchDebounceSource != 0)
+            {
+                GLib.Functions.SourceRemove(m_searchDebounceSource);
+                m_searchDebounceSource = 0;
+            }
+
+            m_searchDebounceSource = GLib.Functions.TimeoutAdd(GLib.Constants.PRIORITY_DEFAULT, 200, () =>
+            {
+                m_searchDebounceSource = 0;
+                ReloadCurrentTab();
+                return false;
+            });
+        }
+
         private void ReloadCurrentTab()
         {
             var tab = CurrentTab();
@@ -494,62 +517,86 @@ namespace DoomLauncher.Linux
             GtkUtil.ClearList(m_list);
             GtkUtil.ClearFlow(m_tiles);
 
+            if (m_currentFiles == null)
+                return;
+
+            // Only populate the view that is actually visible. Building the tile
+            // view runs a per-file image lookup (a database query plus a
+            // synchronous image decode), so rendering both views on every
+            // reload/search keystroke doubled the work and paid the tile image
+            // cost even while the list view was showing.
+            bool tilesVisible = m_viewStack.GetVisibleChildName() == "tiles";
+
             foreach (var file in m_currentFiles)
             {
-                var row = Gtk.ListBoxRow.New();
-                row.Name = file.GameFileID?.ToString() ?? file.FileName;
-                var box = Gtk.Box.New(Gtk.Orientation.Horizontal, 12);
-                box.SetMarginStart(8);
-                box.SetMarginEnd(8);
-                box.SetMarginTop(6);
-                box.SetMarginBottom(6);
-                var left = Gtk.Box.New(Gtk.Orientation.Vertical, 2);
-                var title = Gtk.Label.New(string.IsNullOrEmpty(file.Title) ? file.FileNameNoPath : file.Title);
-                title.SetXalign(0);
-                title.AddCssClass("heading");
-                var meta = Gtk.Label.New($"{file.FileNameNoPath}   {file.Author}   {(file.LastPlayed.HasValue ? file.LastPlayed.Value.ToShortDateString() : "")}");
-                meta.SetXalign(0);
-                meta.AddCssClass("dim-label");
-                left.Hexpand = true;
-                left.Append(title);
-                left.Append(meta);
-                box.Append(left);
-                if (file.Rating.HasValue)
-                    box.Append(Gtk.Label.New($"★ {file.Rating.Value:0.0}"));
-                row.SetChild(box);
-                m_list.Append(row);
-
-                var tile = Gtk.FlowBoxChild.New();
-                tile.Name = row.Name;
-                var tileBox = Gtk.Box.New(Gtk.Orientation.Vertical, 4);
-                tileBox.SetMarginStart(6);
-                tileBox.SetMarginEnd(6);
-                tileBox.SetMarginTop(6);
-                tileBox.SetMarginBottom(6);
-                var pic = Gtk.Picture.New();
-                pic.SetContentFit(Gtk.ContentFit.Cover);
-                int size = Math.Max(120, DataCache.Instance.AppConfiguration.TileImageSize / 2);
-                pic.SetSizeRequest(size, (int)(size * 0.75));
-                var image = m_ops.GetMainImage(file);
-                GtkUtil.SetPictureFromFile(pic, image?.FullFileName);
-                var tileTitle = Gtk.Label.New(string.IsNullOrEmpty(file.Title) ? file.FileNameNoPath : file.Title);
-                tileTitle.SetEllipsize(Pango.EllipsizeMode.End);
-                tileBox.Append(pic);
-                tileBox.Append(tileTitle);
-                tile.SetChild(tileBox);
-                m_tiles.Append(tile);
+                if (tilesVisible)
+                    m_tiles.Append(BuildTile(file));
+                else
+                    m_list.Append(BuildListRow(file));
             }
+        }
+
+        private Gtk.ListBoxRow BuildListRow(IGameFile file)
+        {
+            var row = Gtk.ListBoxRow.New();
+            row.Name = file.GameFileID?.ToString() ?? file.FileName;
+            var box = Gtk.Box.New(Gtk.Orientation.Horizontal, 12);
+            box.SetMarginStart(8);
+            box.SetMarginEnd(8);
+            box.SetMarginTop(6);
+            box.SetMarginBottom(6);
+            var left = Gtk.Box.New(Gtk.Orientation.Vertical, 2);
+            var title = Gtk.Label.New(string.IsNullOrEmpty(file.Title) ? file.FileNameNoPath : file.Title);
+            title.SetXalign(0);
+            title.AddCssClass("heading");
+            var meta = Gtk.Label.New($"{file.FileNameNoPath}   {file.Author}   {(file.LastPlayed.HasValue ? file.LastPlayed.Value.ToShortDateString() : "")}");
+            meta.SetXalign(0);
+            meta.AddCssClass("dim-label");
+            left.Hexpand = true;
+            left.Append(title);
+            left.Append(meta);
+            box.Append(left);
+            if (file.Rating.HasValue)
+                box.Append(Gtk.Label.New($"★ {file.Rating.Value:0.0}"));
+            row.SetChild(box);
+            return row;
+        }
+
+        private Gtk.FlowBoxChild BuildTile(IGameFile file)
+        {
+            var tile = Gtk.FlowBoxChild.New();
+            tile.Name = file.GameFileID?.ToString() ?? file.FileName;
+            var tileBox = Gtk.Box.New(Gtk.Orientation.Vertical, 4);
+            tileBox.SetMarginStart(6);
+            tileBox.SetMarginEnd(6);
+            tileBox.SetMarginTop(6);
+            tileBox.SetMarginBottom(6);
+            var pic = Gtk.Picture.New();
+            pic.SetContentFit(Gtk.ContentFit.Cover);
+            int size = Math.Max(120, DataCache.Instance.AppConfiguration.TileImageSize / 2);
+            pic.SetSizeRequest(size, (int)(size * 0.75));
+            var image = m_ops.GetMainImage(file);
+            GtkUtil.SetPictureFromFile(pic, image?.FullFileName);
+            var tileTitle = Gtk.Label.New(string.IsNullOrEmpty(file.Title) ? file.FileNameNoPath : file.Title);
+            tileTitle.SetEllipsize(Pango.EllipsizeMode.End);
+            tileBox.Append(pic);
+            tileBox.Append(tileTitle);
+            tile.SetChild(tileBox);
+            return tile;
         }
 
         private void ToggleView()
         {
             string visible = m_viewStack.GetVisibleChildName();
             m_viewStack.SetVisibleChildName(visible == "list" ? "tiles" : "list");
+            // The newly shown view is populated lazily, so rebuild it now.
+            RenderFiles();
         }
 
         private void ApplyViewType(GameFileViewType type)
         {
             m_viewStack.SetVisibleChildName(type == GameFileViewType.GridView ? "list" : "tiles");
+            RenderFiles();
         }
 
         private void OnSelectionChanged()

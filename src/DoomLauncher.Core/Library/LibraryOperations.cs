@@ -476,7 +476,7 @@ namespace DoomLauncher
                 ?? reader.Entries.FirstOrDefault(x => x.FullName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase));
             if (entry == null)
                 return null;
-            string dest = Path.Combine(Config.TempDirectory.GetFullPath(), entry.Name);
+            string dest = Path.Combine(Config.TempDirectory.GetFullPath(), ArchivePath.SafeFileName(entry.Name));
             Directory.CreateDirectory(Config.TempDirectory.GetFullPath());
             entry.ExtractToFile(dest, true);
             return dest;

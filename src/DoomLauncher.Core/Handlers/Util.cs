@@ -295,8 +295,9 @@ namespace DoomLauncher
             if (!entry.ExtractRequired)
                 return entry.FullName;
 
-            string ext = Path.GetExtension(entry.Name);
-            string file = entry.Name.Replace(ext, string.Empty) + "_";
+            string safeName = ArchivePath.SafeFileName(entry.Name);
+            string ext = Path.GetExtension(safeName);
+            string file = safeName.Replace(ext, string.Empty) + "_";
             string[] searchFiles = Directory.GetFiles(tempDirectory, file + "*");
 
             string matchingFile = searchFiles.FirstOrDefault(x => new FileInfo(x).Length == entry.Length);
