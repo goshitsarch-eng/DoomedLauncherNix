@@ -66,7 +66,7 @@ namespace DoomLauncher
                     dlItem.DownloadProgressChanged += dlItem_DownloadProgressChanged;
                     dlItem.DownloadCompleted += dlItem_DownloadCompleted;
 
-                    string dest = Path.Combine(DownloadDirectory.GetFullPath(), dlItem.FileName);
+                    string dest = Path.Combine(DownloadDirectory.GetFullPath(), ArchivePath.SafeFileName(dlItem.FileName));
                     m_paths[dlItem] = dest;
 
                     if (DownloadView != null)
