@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>UnitTest</RootNamespace>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DoomLauncher.Core\DoomLauncher.Core.csproj" />
+    <ProjectReference Include="..\WadReader\WadReader.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\UnitTest\Resources\**\*" CopyToOutputDirectory="PreserveNewest" Link="Resources\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="..\DoomLauncher.Core\DoomLauncher.sqlite" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

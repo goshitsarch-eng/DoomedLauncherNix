@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>DoomLauncher</RootNamespace>
+    <AssemblyName>DoomLauncher.Core</AssemblyName>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="DoomLauncher.Core.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Gameloop.Vdf" Version="0.6.2" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.11" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Octokit" Version="13.0.1" />
+    <PackageReference Include="SharpCompress" Version="0.44.2" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WadReader\WadReader.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\PLAYPAL.LMP" LogicalName="DoomLauncher.Resources.PLAYPAL.LMP" />
+    <EmbeddedResource Include="Resources\HereticPalette.pal" LogicalName="DoomLauncher.Resources.HereticPalette.pal" />
+    <EmbeddedResource Include="Resources\HexenPalette.pal" LogicalName="DoomLauncher.Resources.HexenPalette.pal" />
+    <Content Include="TileImages\*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="DoomLauncher.sqlite" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
