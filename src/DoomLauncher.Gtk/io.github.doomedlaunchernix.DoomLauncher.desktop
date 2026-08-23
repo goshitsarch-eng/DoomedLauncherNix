@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Doom Launcher
+Comment=Doom frontend and wad library
+Exec=DoomLauncher %F
+Icon=io.github.doomedlaunchernix.DoomLauncher
+Terminal=false
+Categories=Game;
+MimeType=application/x-doom;application/x-wad;
+StartupNotify=true
