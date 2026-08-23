@@ -339,7 +339,10 @@ namespace DoomLauncher.Linux
             box.SetHalign(Gtk.Align.End);
             box.SetMarginTop(8);
             foreach (var button in buttons)
-                box.Append(button);
+            {
+                if (button != null)
+                    box.Append(button);
+            }
             return box;
         }
     }

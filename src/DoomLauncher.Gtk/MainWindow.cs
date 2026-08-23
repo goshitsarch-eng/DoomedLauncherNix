@@ -2,6 +2,7 @@ using DoomLauncher.Config;
 using DoomLauncher.DataSources;
 using DoomLauncher.GameStores;
 using DoomLauncher.Handlers;
+using DoomLauncher.Handlers.Sync;
 using DoomLauncher.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -54,6 +55,8 @@ namespace DoomLauncher.Linux
         private readonly Dictionary<int, IFileData> m_associationByRow = new Dictionary<int, IFileData>();
         private GameFileFieldType m_sortField = GameFileFieldType.Title;
         private bool m_sortDesc;
+        private bool m_playAfterDownload;
+        private string m_playAfterDownloadName;
 
         public MainWindow(Adw.Application app, LaunchArgs launchArgs)
         {
@@ -84,7 +87,7 @@ namespace DoomLauncher.Linux
             m_downloads = new DownloadsWindow(this);
             m_downloadHandler = new DownloadHandler(cfg.TempDirectory, m_downloads);
             m_downloads.UserPlay += (s, e) => HandlePlay(PlayForceDialog: false);
-            m_downloads.DownloadFinished += OnDownloadFinished;
+            m_downloadHandler.ItemDownloadCompleted += OnItemDownloadCompleted;
 
             var header = Adw.HeaderBar.New();
             var menuButton = Gtk.MenuButton.New();
@@ -106,6 +109,16 @@ namespace DoomLauncher.Linux
             play.AddCssClass("suggested-action");
             play.OnClicked += (s, e) => HandlePlay(false);
             header.PackEnd(play);
+
+            var mods = Gtk.Button.NewFromIconName("system-software-install-symbolic");
+            mods.SetTooltipText("Get mods");
+            mods.OnClicked += (s, e) => GetModsDialog.Show(this, m_idGames, QueueDownload);
+            header.PackEnd(mods);
+
+            var setup = Gtk.Button.NewFromIconName("emblem-system-symbolic");
+            setup.SetTooltipText("Setup assistant");
+            setup.OnClicked += (s, e) => OpenSetupWizard();
+            header.PackEnd(setup);
 
             var downloads = Gtk.Button.NewFromIconName("folder-download-symbolic");
             downloads.SetTooltipText("Downloads");
@@ -285,6 +298,8 @@ namespace DoomLauncher.Linux
             add.Append("Add IWADs...", "win.add-iwads");
             add.Append("Add Files Recursively...", "win.add-recursive");
             add.Append("Load WADs from Steam/GOG...", "win.load-stores");
+            add.Append("Setup assistant...", "win.setup-wizard");
+            add.Append("Get mods...", "win.get-mods");
             menu.AppendSection(null, add);
 
             var ports = Gio.Menu.New();
@@ -335,6 +350,8 @@ namespace DoomLauncher.Linux
                 files => AddFiles(files, AddFileType.IWad)));
             AddAction("add-recursive", () => GtkUtil.OpenFolder(this, "Select Folder", AddRecursive));
             AddAction("load-stores", LoadStores);
+            AddAction("setup-wizard", OpenSetupWizard);
+            AddAction("get-mods", () => GetModsDialog.Show(this, m_idGames, QueueDownload));
             AddAction("source-ports", () => SourcePortsDialog.Show(this, SourcePortLaunchType.SourcePort, ReloadCurrentTab));
             AddAction("utilities", () => SourcePortsDialog.Show(this, SourcePortLaunchType.Utility, ReloadCurrentTab));
             AddAction("doom64", () => SourcePortsDialog.Show(this, SourcePortLaunchType.Doom64, ReloadCurrentTab));
@@ -792,21 +809,24 @@ namespace DoomLauncher.Linux
                 GtkUtil.Alert(this, "Launch failed", result.ErrorMessage);
         }
 
-        private void AddFiles(string[] files, AddFileType type)
+        private void AddFiles(string[] files, AddFileType type, Action<SyncResult> done = null)
         {
             if (files == null || files.Length == 0)
+            {
+                done?.Invoke(SyncResult.EMPTY);
                 return;
+            }
             files = m_ops.ExpandZdlFiles(files);
             FileManagement management = DataCache.Instance.AppConfiguration.FileManagement;
             if (management == FileManagement.Prompt)
             {
-                FileManagementDialog.Show(this, chosen => DoAdd(files, type, chosen));
+                FileManagementDialog.Show(this, chosen => DoAdd(files, type, chosen, done));
                 return;
             }
-            DoAdd(files, type, management);
+            DoAdd(files, type, management, done);
         }
 
-        private void DoAdd(string[] files, AddFileType type, FileManagement management)
+        private void DoAdd(string[] files, AddFileType type, FileManagement management, Action<SyncResult> done = null)
         {
             Task.Run(() =>
             {
@@ -815,10 +835,14 @@ namespace DoomLauncher.Linux
                 {
                     m_progress.Visible = false;
                     ReloadCurrentTab();
+                    if (type == AddFileType.IWad)
+                        SourcePortSetup.EnsureDefaultIWad(DataCache.Instance.DataSourceAdapter);
                     if (result.InvalidFiles.Count > 0)
                         SyncStatusDialog.Show(this, result);
                     else
                         Toast($"Added {result.AddedGameFiles.Count} file(s)");
+                    MaybePlayImported(result);
+                    done?.Invoke(result);
                 });
             });
         }
@@ -1018,6 +1042,16 @@ namespace DoomLauncher.Linux
             Toast("Desktop shortcut created");
         }
 
+        private void QueueDownload(IGameFileDownloadable file, bool playWhenReady)
+        {
+            if (file == null)
+                return;
+            m_playAfterDownload = playWhenReady;
+            m_playAfterDownloadName = file.FileName;
+            m_downloads.Present();
+            m_downloadHandler.Download(m_idGames, file);
+        }
+
         private void DownloadSelected()
         {
             var file = SelectedFile() as IGameFileDownloadable;
@@ -1026,19 +1060,66 @@ namespace DoomLauncher.Linux
                 Toast("Select an idgames file to download");
                 return;
             }
-            m_downloads.Present();
-            m_downloadHandler.Download(m_idGames, file);
+            QueueDownload(file, false);
         }
 
-        private void OnDownloadFinished(object sender, EventArgs e)
+        private void OnItemDownloadCompleted(object sender, DownloadItemCompletedEventArgs e)
         {
             GtkUtil.RunOnUi(() =>
             {
-                var dest = DataCache.Instance.AppConfiguration.TempDirectory.GetFullPath();
-                var zips = Directory.GetFiles(dest, "*.zip");
-                if (zips.Length > 0)
-                    AddFiles(zips, AddFileType.GameFile);
+                if (e == null || e.Cancelled || e.Error != null || string.IsNullOrEmpty(e.FilePath) || !File.Exists(e.FilePath))
+                    return;
+                AddFiles(new[] { e.FilePath }, AddFileType.GameFile);
             });
+        }
+
+        private void MaybePlayImported(SyncResult result)
+        {
+            if (!m_playAfterDownload || result == null)
+                return;
+            var match = result.AddedOrUpdatedFiles.FirstOrDefault(x =>
+                string.Equals(x.FileNameNoPath, Path.GetFileName(m_playAfterDownloadName), StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(x.FileName, m_playAfterDownloadName, StringComparison.OrdinalIgnoreCase));
+            m_playAfterDownload = false;
+            m_playAfterDownloadName = null;
+            if (match != null)
+                LaunchFromProfile(match, null);
+        }
+
+        private void OpenSetupWizard()
+        {
+            SetupWizard.Show(new SetupWizardCallbacks
+            {
+                Window = this,
+                IdGames = m_idGames,
+                Reload = ReloadCurrentTab,
+                LoadStores = LoadStores,
+                AddFiles = (files, type, done) => AddFiles(files, type, done),
+                Download = QueueDownload,
+                Play = file => LaunchFromProfile(file, null)
+            });
+        }
+
+        private void OnShown()
+        {
+            var adapter = DataCache.Instance.DataSourceAdapter;
+            bool needsWizard = !adapter.GetSourcePorts().Any() || !adapter.GetIWads().Any();
+            SourcePortSetup.EnsureDetectedPorts(adapter);
+            SourcePortSetup.EnsureDefaultSourcePort(adapter);
+
+            if (needsWizard)
+            {
+                if (!adapter.GetIWads().Any())
+                    LoadStores();
+                OpenSetupWizard();
+            }
+
+            if (m_ops.GetSyncNeeded().Any())
+                m_resyncButton.Visible = true;
+
+            _ = CheckUpdate();
+            HandleLaunchArgs();
+            ReloadCurrentTab();
         }
 
         private void ViewWebPage()
@@ -1113,35 +1194,6 @@ namespace DoomLauncher.Linux
         private void Toast(string text)
         {
             m_toasts.AddToast(Adw.Toast.New(text));
-        }
-
-        private void OnShown()
-        {
-            var adapter = DataCache.Instance.DataSourceAdapter;
-            if (!adapter.GetSourcePorts().Any())
-            {
-                WelcomeDialog.Show(this);
-                SourcePortsDialog.Show(this, SourcePortLaunchType.SourcePort, ReloadCurrentTab);
-            }
-
-            if (!adapter.GetIWads().Any())
-                LoadStores();
-
-            if (!adapter.GetIWads().Any())
-            {
-                GtkUtil.OpenFiles(this, "Select IWADs", new[] { "*.wad", "*.iwad", "*.ipk3" }, files =>
-                {
-                    AddFiles(files, AddFileType.IWad);
-                    SettingsDialog.ShowLaunchDefaults(this, ReloadCurrentTab);
-                });
-            }
-
-            if (m_ops.GetSyncNeeded().Any())
-                m_resyncButton.Visible = true;
-
-            _ = CheckUpdate();
-            HandleLaunchArgs();
-            ReloadCurrentTab();
         }
 
         private async Task CheckUpdate()

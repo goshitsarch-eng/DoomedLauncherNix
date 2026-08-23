@@ -6,9 +6,28 @@ using System.IO;
 
 namespace DoomLauncher
 {
+    public class DownloadItemCompletedEventArgs : EventArgs
+    {
+        public IGameFileDownloadable Item { get; }
+        public string FilePath { get; }
+        public bool Cancelled { get; }
+        public Exception Error { get; }
+
+        public DownloadItemCompletedEventArgs(IGameFileDownloadable item, string filePath, bool cancelled, Exception error)
+        {
+            Item = item;
+            FilePath = filePath;
+            Cancelled = cancelled;
+            Error = error;
+        }
+    }
+
     public class DownloadHandler
     {
+        public event EventHandler<DownloadItemCompletedEventArgs> ItemDownloadCompleted;
+
         private readonly List<IGameFileDownloadable> m_currentDownloads = new List<IGameFileDownloadable>();
+        private readonly Dictionary<IGameFileDownloadable, string> m_paths = new Dictionary<IGameFileDownloadable, string>();
 
         public DownloadHandler(LauncherPath downloadDirectory, IDownloadView view)
         {
@@ -47,10 +66,13 @@ namespace DoomLauncher
                     dlItem.DownloadProgressChanged += dlItem_DownloadProgressChanged;
                     dlItem.DownloadCompleted += dlItem_DownloadCompleted;
 
+                    string dest = Path.Combine(DownloadDirectory.GetFullPath(), dlItem.FileName);
+                    m_paths[dlItem] = dest;
+
                     if (DownloadView != null)
                         DownloadView.AddDownload(dlItem, dlItem.FileName);
 
-                    dlItem.Download(adapter, Path.Combine(DownloadDirectory.GetFullPath(), dlItem.FileName));
+                    dlItem.Download(adapter, dest);
                 }
                 catch
                 {
@@ -77,13 +99,20 @@ namespace DoomLauncher
         void dlItem_DownloadCompleted(object sender, AsyncCompletedEventArgs e)
         {
             IGameFileDownloadable dlItem = sender as IGameFileDownloadable;
-            if (DownloadView != null && dlItem != null)
-            {
-                DownloadView.UpdateDownload(sender, string.Format("{0} ({1})", dlItem.FileName, 
-                    e.Cancelled ? "Cancelled" : "Complete"));
+            if (dlItem == null)
+                return;
 
-                m_currentDownloads.Remove(dlItem);
+            m_paths.TryGetValue(dlItem, out string path);
+            m_paths.Remove(dlItem);
+            m_currentDownloads.Remove(dlItem);
+
+            if (DownloadView != null)
+            {
+                DownloadView.UpdateDownload(sender, string.Format("{0} ({1})", dlItem.FileName,
+                    e.Cancelled ? "Cancelled" : "Complete"));
             }
+
+            ItemDownloadCompleted?.Invoke(this, new DownloadItemCompletedEventArgs(dlItem, path, e.Cancelled, e.Error));
         }
 
         public IDownloadView DownloadView { get; set; }

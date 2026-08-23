@@ -41,6 +41,18 @@ namespace DoomLauncher.Linux
                 return adapter.GetSourcePort(id);
             }
 
+            var detect = type == SourcePortLaunchType.SourcePort
+                ? GtkUtil.Button("Detect GZDoom / ports...", () =>
+                {
+                    var added = SourcePortSetup.EnsureDetectedPorts(adapter);
+                    reload();
+                    changed?.Invoke();
+                    string message = added.Count == 0
+                        ? "No new ports found. You can still add one manually, or install GZDoom as a Flatpak (org.zdoom.GZDoom)."
+                        : $"Added {added.Count} port(s).";
+                    GtkUtil.Alert(window, "Detect source ports", message);
+                })
+                : null;
             var add = GtkUtil.Button("Add...", () => SourcePortEditDialog.Show(parent, type, null, () => { reload(); changed?.Invoke(); }));
             var edit = GtkUtil.Button("Edit...", () =>
             {
@@ -69,7 +81,7 @@ namespace DoomLauncher.Linux
             box.SetMarginTop(12);
             box.SetMarginBottom(12);
             box.Append(GtkUtil.Scroll(list));
-            box.Append(GtkUtil.DialogButtons(add, edit, delete, GtkUtil.Button("Close", () => window.Destroy())));
+            box.Append(GtkUtil.DialogButtons(detect, add, edit, delete, GtkUtil.Button("Close", () => window.Destroy())));
             window.SetChild(box);
             window.Present();
         }
@@ -88,7 +100,7 @@ namespace DoomLauncher.Linux
 
             var name = Gtk.Entry.New();
             var exec = Gtk.Entry.New();
-            exec.SetPlaceholderText("gzdoom or /usr/bin/gzdoom");
+            exec.SetPlaceholderText("gzdoom or flatpak:org.zdoom.GZDoom");
             var directory = Gtk.Entry.New();
             var extensions = Gtk.Entry.New();
             var fileOption = Gtk.Entry.New();
@@ -126,10 +138,24 @@ namespace DoomLauncher.Linux
                 exec.SetText(System.IO.Path.GetFileName(path));
                 directory.SetText(System.IO.Path.GetDirectoryName(path) ?? string.Empty);
             }));
+            var detectOne = GtkUtil.Button("Use detected GZDoom...", () =>
+            {
+                var found = SourcePortDetector.Detect().FirstOrDefault();
+                if (found == null)
+                {
+                    var hint = SourcePortDetector.GetGzdoomInstallHint();
+                    GtkUtil.Alert(window, "Nothing detected", "No GZDoom binary or Flatpak was found.\n\n" + hint.Command);
+                    return;
+                }
+                name.SetText(string.IsNullOrWhiteSpace(name.GetText()) ? found.Name : name.GetText());
+                exec.SetText(found.Executable);
+                directory.SetText(found.Directory ?? string.Empty);
+            });
 
             box.Append(GtkUtil.LabeledRow("Name", name));
             box.Append(GtkUtil.LabeledRow("Executable", exec));
             box.Append(browse);
+            box.Append(detectOne);
             box.Append(GtkUtil.LabeledRow("Directory", directory));
             box.Append(GtkUtil.LabeledRow("Extensions", extensions));
             box.Append(GtkUtil.LabeledRow("File option", fileOption));
