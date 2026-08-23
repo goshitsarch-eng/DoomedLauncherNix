@@ -361,6 +361,20 @@ namespace DoomLauncher.Linux
             return window;
         }
 
+        // Adwaita window with no separate native titlebar. Use this (with SetContent)
+        // for windows that embed their own Adw.HeaderBar, so they don't end up with a
+        // second title bar and duplicate window controls stacked on top.
+        public static Adw.Window AdwModalWindow(Gtk.Window parent, string title, int width, int height)
+        {
+            var window = Adw.Window.New();
+            window.SetTitle(title);
+            window.SetDefaultSize(width, height);
+            window.SetModal(true);
+            window.SetTransientFor(parent);
+            window.SetResizable(true);
+            return window;
+        }
+
         public static Gtk.Box DialogButtons(params Gtk.Widget[] buttons)
         {
             var box = Gtk.Box.New(Gtk.Orientation.Horizontal, 8);

@@ -63,7 +63,11 @@ namespace DoomLauncher.Linux
         {
             m_app = app;
             m_launchArgs = launchArgs;
-            Native = Gtk.ApplicationWindow.New(app);
+            // Use Adw.ApplicationWindow (not Gtk.ApplicationWindow) so the window has no
+            // separate native titlebar. A plain Gtk.ApplicationWindow keeps its own titlebar
+            // in addition to the Adw.HeaderBar placed in the content, producing two stacked
+            // title bars (and duplicate/"traffic light" window controls).
+            Native = Adw.ApplicationWindow.New(app);
             Native.SetTitle("Doom Launcher");
             m_ops = new LibraryOperations();
             m_ops.SyncProgress += (file, current, total) => GtkUtil.RunOnUi(() =>
@@ -251,7 +255,7 @@ namespace DoomLauncher.Linux
 
             m_toasts = Adw.ToastOverlay.New();
             m_toasts.SetChild(content);
-            Native.SetChild(m_toasts);
+            ((Adw.ApplicationWindow)Native).SetContent(m_toasts);
 
             m_contextBox = Gtk.Box.New(Gtk.Orientation.Vertical, 0);
             m_contextMenu = Gtk.Popover.New();
