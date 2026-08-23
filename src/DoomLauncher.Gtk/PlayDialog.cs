@@ -69,8 +69,7 @@ namespace DoomLauncher.Linux
                 : full.SettingsSpecificFiles.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
             void refreshFiles()
             {
-                while (filesList.GetFirstChild() != null)
-                    filesList.Remove(filesList.GetFirstChild());
+                GtkUtil.ClearList(filesList);
                 foreach (var f in additional)
                     filesList.Append(Gtk.Label.New(f.FileNameNoPath));
             }

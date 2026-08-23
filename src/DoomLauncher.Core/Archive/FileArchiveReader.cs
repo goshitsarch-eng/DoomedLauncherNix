@@ -22,7 +22,7 @@ namespace DoomLauncher
         public override void Read(byte[] buffer, int offset, int length)
         {
             using (var stream = File.OpenRead(m_file))
-                stream.Read(buffer, offset, length);
+                stream.ReadExactly(buffer.AsSpan(offset, length));
         }
 
         public IEnumerable<IArchiveEntry> Entries => m_entries;

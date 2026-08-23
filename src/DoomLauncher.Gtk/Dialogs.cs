@@ -226,8 +226,7 @@ namespace DoomLauncher.Linux
             var files = DataCache.Instance.DataSourceAdapter.GetGameFiles().ToList();
             void render(string text)
             {
-                while (list.GetFirstChild() != null)
-                    list.Remove(list.GetFirstChild());
+                GtkUtil.ClearList(list);
                 foreach (var file in files.Where(x => string.IsNullOrEmpty(text) ||
                     (x.Title ?? string.Empty).Contains(text, StringComparison.OrdinalIgnoreCase) ||
                     (x.FileName ?? string.Empty).Contains(text, StringComparison.OrdinalIgnoreCase)))

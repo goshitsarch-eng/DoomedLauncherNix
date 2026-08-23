@@ -16,8 +16,7 @@ namespace DoomLauncher.Linux
 
             void reload()
             {
-                while (list.GetFirstChild() != null)
-                    list.Remove(list.GetFirstChild());
+                GtkUtil.ClearList(list);
                 DataCache.Instance.UpdateTags();
                 foreach (var tag in DataCache.Instance.Tags)
                 {

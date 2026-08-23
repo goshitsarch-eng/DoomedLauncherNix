@@ -16,7 +16,7 @@ namespace UnitTest.Tests
                 FileName = "blahblah.wad"
             };
 
-            byte[] pngBytes = File.ReadAllBytes("resources/happy.png");
+            byte[] pngBytes = File.ReadAllBytes("Resources/happy.png");
 
             Tree files = new Tree("root", new Tree("STARTUP", pngBytes));
             var reader = new TreeReader(files);
@@ -35,7 +35,7 @@ namespace UnitTest.Tests
                 FileName = "wad_with_planar.wad"
             };
 
-            byte[] planarBytes = File.ReadAllBytes("resources/planarimage.dat");
+            byte[] planarBytes = File.ReadAllBytes("Resources/planarimage.dat");
 
             Tree files = new Tree("root", new Tree("STARTUP.dat", planarBytes));
             var reader = new TreeReader(files);
@@ -54,7 +54,7 @@ namespace UnitTest.Tests
                 FileName = "wad_with_planar.wad"
             };
 
-            byte[] planarBytes = File.ReadAllBytes("resources/planarimage.dat");
+            byte[] planarBytes = File.ReadAllBytes("Resources/planarimage.dat");
 
             Tree files = new Tree("root", new Tree("STARTUP.wad", planarBytes));
             var reader = new TreeReader(files);
@@ -73,7 +73,7 @@ namespace UnitTest.Tests
                 FileName = "wad_with_planar.wad"
             };
 
-            byte[] planarBytes = File.ReadAllBytes("resources/planarimage.dat");
+            byte[] planarBytes = File.ReadAllBytes("Resources/planarimage.dat");
 
             Tree files = new Tree("root", new Tree("STARTUP0", planarBytes));
             var reader = new TreeReader(files);
@@ -93,7 +93,7 @@ namespace UnitTest.Tests
                 FileName = "wadname.wad"
             };
 
-            byte[] planarBytes = File.ReadAllBytes("resources/planarimage.dat");
+            byte[] planarBytes = File.ReadAllBytes("Resources/planarimage.dat");
 
             Tree files = new Tree("root", new Tree("STARTUP.blah", new byte[] { 0x01, 0x02, 0x03, 0xab, 0xcd }));
             var reader = new TreeReader(files);

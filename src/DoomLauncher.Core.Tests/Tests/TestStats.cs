@@ -50,6 +50,14 @@ namespace UnitTest.Tests
         public void TestInsert()
         {
             IDataSourceAdapter adapter = TestUtil.CreateAdapter();
+            ((DbDataSourceAdapter)adapter).DataAccess.ExecuteNonQuery("delete from Stats");
+            try
+            {
+                ((DbDataSourceAdapter)adapter).DataAccess.ExecuteNonQuery("delete from sqlite_sequence where name='Stats'");
+            }
+            catch
+            {
+            }
             var stats = CreateStatsData();
             foreach (var stat in stats)
                 adapter.InsertStats(stat);

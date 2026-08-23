@@ -410,11 +410,12 @@ namespace DoomLauncher.Linux
 
         private void RebuildTabs()
         {
-            while (m_tabs.GetNPages() > 0)
-                m_tabs.RemovePage(0);
+            int count = m_tabs.GetNPages();
+            for (int i = count - 1; i >= 0; i--)
+                m_tabs.RemovePage(i);
             m_tabDefs = LibraryTabService.BuildTabs(DataCache.Instance.DataSourceAdapter, DataCache.Instance.AppConfiguration);
             foreach (var tab in m_tabDefs)
-                m_tabs.AppendPage(Gtk.Box.New(Gtk.Orientation.Vertical, 0), Gtk.Label.New(tab.Title));
+                m_tabs.AppendPage(Gtk.Label.New(""), Gtk.Label.New(tab.Title));
             m_tabs.SetShowTabs(DataCache.Instance.AppConfiguration.ShowTabHeaders);
             int last = DataCache.Instance.AppConfiguration.LastSelectedTabIndex;
             if (last >= 0 && last < m_tabDefs.Count)
@@ -473,10 +474,8 @@ namespace DoomLauncher.Linux
 
         private void RenderFiles()
         {
-            while (m_list.GetFirstChild() != null)
-                m_list.Remove(m_list.GetFirstChild());
-            while (m_tiles.GetFirstChild() != null)
-                m_tiles.Remove(m_tiles.GetFirstChild());
+            GtkUtil.ClearList(m_list);
+            GtkUtil.ClearFlow(m_tiles);
 
             foreach (var file in m_currentFiles)
             {
@@ -605,8 +604,7 @@ namespace DoomLauncher.Linux
 
         private void ClearAssoc(Gtk.ListBox list)
         {
-            while (list.GetFirstChild() != null)
-                list.Remove(list.GetFirstChild());
+            GtkUtil.ClearList(list);
         }
 
         private void FillAssoc(Gtk.ListBox list, IEnumerable<IFileData> files)

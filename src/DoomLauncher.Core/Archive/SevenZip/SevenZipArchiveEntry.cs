@@ -1,4 +1,5 @@
 ﻿using SharpCompress.Archives;
+using System;
 using System.IO;
 
 namespace DoomLauncher.Archive.SevenZip
@@ -43,7 +44,7 @@ namespace DoomLauncher.Archive.SevenZip
             }
 
             m_ms.Position = 0;
-            m_ms.Read(buffer, offset, length);
+            m_ms.ReadExactly(buffer.AsSpan(offset, length));
         }
 
         public override bool Equals(object obj)

@@ -174,15 +174,15 @@ namespace UnitTest.Tests
             database.InsertSourcePort(sourcePort);
 
             // Put the original file in the sourceport directory
-            File.Copy("Resources/chocosave1.dsg", @"SourcePortSaveGames\chocosave1.dsg");
-            Assert.IsTrue(File.Exists(@"SourcePortSaveGames\chocosave1.dsg"));
+            File.Copy("Resources/chocosave1.dsg", Path.Combine("SourcePortSaveGames", "chocosave1.dsg"));
+            Assert.IsTrue(File.Exists(Path.Combine("SourcePortSaveGames", "chocosave1.dsg")));
 
             var gameFile = new GameFile() { FileName = "shotgun.zip" };
             database.InsertGameFile(gameFile);
-            var saveGame = saveGameHandler.InsertSaveGame(sourcePort, gameFile, @"SourcePortSaveGames\chocosave1.dsg");
+            var saveGame = saveGameHandler.InsertSaveGame(sourcePort, gameFile, Path.Combine("SourcePortSaveGames", "chocosave1.dsg"));
 
             // Touch the save so we know that it has been copied
-            var originalFileInfo = TestUtil.TouchFile(@"SourcePortSaveGames\chocosave1.dsg");
+            var originalFileInfo = TestUtil.TouchFile(Path.Combine("SourcePortSaveGames", "chocosave1.dsg"));
 
             saveGameHandler.UpdateSaveGameFromSourcePort(sourcePort, saveGame);
 
@@ -203,12 +203,12 @@ namespace UnitTest.Tests
             database.InsertSourcePort(sourcePort);
 
             // Put the original file in the sourceport directory
-            File.Copy("Resources/chocosave1.dsg", @"SourcePortSaveGames\chocosave1.dsg");
-            Assert.IsTrue(File.Exists(@"SourcePortSaveGames\chocosave1.dsg"));
+            File.Copy("Resources/chocosave1.dsg", Path.Combine("SourcePortSaveGames", "chocosave1.dsg"));
+            Assert.IsTrue(File.Exists(Path.Combine("SourcePortSaveGames", "chocosave1.dsg")));
 
             var gameFile = new GameFile() { FileName = "shotgun.zip" };
             database.InsertGameFile(gameFile);
-            var saveGame = saveGameHandler.InsertSaveGame(sourcePort, gameFile, @"SourcePortSaveGames\chocosave1.dsg");
+            var saveGame = saveGameHandler.InsertSaveGame(sourcePort, gameFile, Path.Combine("SourcePortSaveGames", "chocosave1.dsg"));
 
             // Set Description to null in DB
             saveGame.Description = null;
@@ -216,7 +216,7 @@ namespace UnitTest.Tests
             Assert.IsNull(saveGame.Description);
 
             // Touch the original file so we know if it was copied or not
-            var originalFileInfo = TestUtil.TouchFile(@"SourcePortSaveGames\chocosave1.dsg");
+            var originalFileInfo = TestUtil.TouchFile(Path.Combine("SourcePortSaveGames", "chocosave1.dsg"));
 
             saveGameHandler.UpdateSaveGameFromSourcePort(sourcePort, saveGame);
 
@@ -239,15 +239,15 @@ namespace UnitTest.Tests
             database.InsertSourcePort(sourcePort);
 
             // Put the original file in the sourceport directory
-            File.Copy("Resources/chocosave1.dsg", @"SourcePortSaveGames\chocosave1.dsg");
-            var originalFileInfo = new FileInfo(@"SourcePortSaveGames\chocosave1.dsg");
+            File.Copy("Resources/chocosave1.dsg", Path.Combine("SourcePortSaveGames", "chocosave1.dsg"));
+            var originalFileInfo = new FileInfo(Path.Combine("SourcePortSaveGames", "chocosave1.dsg"));
             Assert.IsTrue(originalFileInfo.Exists);
 
             var gameFile = new GameFile() { FileName = "plasma.zip" };
             database.InsertGameFile(gameFile);
-            var saveGame = saveGameHandler.InsertSaveGame(sourcePort, gameFile, @"SourcePortSaveGames\chocosave1.dsg");
+            var saveGame = saveGameHandler.InsertSaveGame(sourcePort, gameFile, Path.Combine("SourcePortSaveGames", "chocosave1.dsg"));
 
-            saveGameHandler.DeleteSaveGame(@"SourcePortSaveGames\chocosave1.dsg", new IFileData[] { saveGame });
+            saveGameHandler.DeleteSaveGame(Path.Combine("SourcePortSaveGames", "chocosave1.dsg"), new IFileData[] { saveGame });
 
             var saveGamesFromDB = database.GetFiles(gameFile, FileType.SaveGame).ToList();
             Assert.IsFalse(saveGamesFromDB.Any(file => file.FileID == saveGame.FileID));
@@ -271,7 +271,7 @@ namespace UnitTest.Tests
 
             saveGameHandler.CopySaveGameToSourcePort(sourcePort, saveGame);
 
-            Assert.IsTrue(File.Exists(@"SourcePortSaveGames\chocosave1.dsg"));
+            Assert.IsTrue(File.Exists(Path.Combine("SourcePortSaveGames", "chocosave1.dsg")));
         }
     }
 }

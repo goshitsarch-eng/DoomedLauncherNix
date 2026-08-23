@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.IO.Compression;
 
 namespace DoomLauncher
@@ -16,7 +17,8 @@ namespace DoomLauncher
 
         public override void Read(byte[] buffer, int offset, int length)
         {
-            m_entry.Open().Read(buffer, offset, length);
+            using var stream = m_entry.Open();
+            stream.ReadExactly(buffer.AsSpan(offset, length));
         }
 
         public override string Name => m_entry.Name;

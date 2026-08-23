@@ -222,7 +222,7 @@ namespace DoomLauncher
                 }
 
                 query.Remove(query.Length - 1, 1);
-                query.Append(" where GameFileID = @gameFileID");
+                query.Append(" where GameFileID = @GameFileID");
             }
             else
             {
@@ -236,7 +236,7 @@ namespace DoomLauncher
                     FileName = @FileName, MapCount = @MapCount, 
                     MinutesPlayed = @MinutesPlayed, SettingsGameProfileID = @SettingsGameProfileID, SettingsSaved = @SettingsSaved,
                     SettingsExtraParamsOnly = @SettingsExtraParamsOnly, IntendedGame = @IntendedGame, IsSyncNeeded = @IsSyncNeeded
-                    where GameFileID = @gameFileID");
+                    where GameFileID = @GameFileID");
             }
 
             List<DbParameter> parameters = new List<DbParameter>
@@ -393,7 +393,7 @@ namespace DoomLauncher
             Name = @Name, Executable = @Executable, SupportedExtensions = @SupportedExtensions,
             Directory = @Directory, SettingsFiles = @SettingsFiles, LaunchType = @LaunchType, FileOption = @FileOption, ExtraParameters = @ExtraParameters,
             AltSaveDirectory = @AltSaveDirectory, Archived = @Archived
-            where SourcePortID = @sourcePortID";
+            where SourcePortID = @SourcePortID";
 
             DataAccess.ExecuteNonQuery(query, GetSourcePortParams(sourcePort));
         }
@@ -745,7 +745,7 @@ namespace DoomLauncher
                     SettingsFilesSourcePort = @SettingsFilesSourcePort, SettingsFilesIWAD = @SettingsFilesIWAD,
                     SettingsSpecificFiles = @SettingsSpecificFiles, SettingsStat = @SettingsStat, SettingsLoadLatestSave =@SettingsLoadLatestSave, 
                     SettingsSaved = @SettingsSaved, SettingsExtraParamsOnly = @SettingsExtraParamsOnly
-                    where GameProfileID = @gameProfileID";
+                    where GameProfileID = @GameProfileID";
 
             List<DbParameter> parameters = new List<DbParameter>
             {

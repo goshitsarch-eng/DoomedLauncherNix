@@ -241,6 +241,16 @@ namespace DoomLauncher.Linux
             }
         }
 
+        public static void ClearList(Gtk.ListBox list)
+        {
+            list.RemoveAll();
+        }
+
+        public static void ClearFlow(Gtk.FlowBox flow)
+        {
+            flow.RemoveAll();
+        }
+
         public static void SetPictureFromFile(Gtk.Picture picture, string path)
         {
             if (picture == null)

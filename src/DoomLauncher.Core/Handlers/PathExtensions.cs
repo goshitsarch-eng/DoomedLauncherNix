@@ -31,7 +31,7 @@ namespace DoomLauncher.Handlers
             // The only way to specify a fixed path that doesn't begin with two slashes
             // is the drive, colon, slash format- i.e. C:\
             return !((path.Length >= 3)
-                && (path[1] == Path.VolumeSeparatorChar)
+                && (path[1] == ':' || path[1] == Path.VolumeSeparatorChar)
                 && IsDirectorySeparator(path[2])
                 // To match old behavior we'll check the drive character for validity as the path is technically
                 // not qualified if you don't have a valid drive. "=:\" is the "=" file's default data stream.

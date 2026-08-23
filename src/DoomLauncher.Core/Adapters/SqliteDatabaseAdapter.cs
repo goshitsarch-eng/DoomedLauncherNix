@@ -13,7 +13,14 @@ namespace DoomLauncher
 
         public DbParameter CreateParameter(string name, object value)
         {
-            return new SqliteParameter(name, value ?? System.DBNull.Value);
+            // Avoid SqliteParameter(string, SqliteType) overload resolution on int/enum values.
+            if (!string.IsNullOrEmpty(name) && name[0] != '@')
+                name = "@" + name;
+            if (value is System.Enum)
+                value = System.Convert.ToInt32(value);
+            var parameter = new SqliteParameter { ParameterName = name };
+            parameter.Value = value ?? System.DBNull.Value;
+            return parameter;
         }
     }
 }
