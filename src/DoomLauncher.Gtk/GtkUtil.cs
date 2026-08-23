@@ -221,18 +221,24 @@ namespace DoomLauncher.Linux
                 return;
             try
             {
-                if (File.Exists(path) || Directory.Exists(path))
+                if (path.Contains("://"))
                 {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "xdg-open",
-                        Arguments = $"\"{path}\"",
-                        UseShellExecute = false
-                    });
+                    Gio.Functions.AppInfoLaunchDefaultForUri(path, null);
                     return;
                 }
 
-                Gio.Functions.AppInfoLaunchDefaultForUri(path.Contains("://") ? path : "file://" + path, null);
+                if (File.Exists(path) || Directory.Exists(path))
+                {
+                    Process.Start(SandboxHost.WrapForHost(new ProcessStartInfo
+                    {
+                        FileName = "xdg-open",
+                        Arguments = SandboxHost.Quote(path),
+                        UseShellExecute = false
+                    }));
+                    return;
+                }
+
+                Gio.Functions.AppInfoLaunchDefaultForUri(path.StartsWith("file:", StringComparison.Ordinal) ? path : "file://" + path, null);
             }
             catch
             {

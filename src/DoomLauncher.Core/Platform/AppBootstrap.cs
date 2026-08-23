@@ -208,6 +208,8 @@ namespace DoomLauncher
         {
             if (!PlatformPaths.IsLinux)
                 return;
+            if (SandboxHost.IsFlatpak)
+                return;
 
             try
             {

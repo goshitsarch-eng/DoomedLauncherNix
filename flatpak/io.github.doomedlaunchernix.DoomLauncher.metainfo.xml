@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.doomedlaunchernix.DoomLauncher</id>
+  <name>Doom Launcher</name>
+  <summary>Doom frontend and wad library for Linux</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <description>
+    <p>
+      Doom Launcher is a library for Doom engine games and mods. On Linux it
+      uses GTK 4 and libadwaita. It can detect GZDoom as a native binary or
+      Flatpak, import IWADs, and download mods from idgames, GitHub, Romero Games,
+      and other community sites.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.doomedlaunchernix.DoomLauncher.desktop</launchable>
+  <url type="homepage">https://github.com/goshitsarch-eng/DoomedLauncherNix</url>
+  <provides>
+    <binary>DoomLauncher</binary>
+  </provides>
+  <content_rating type="oars-1.1"/>
+</component>

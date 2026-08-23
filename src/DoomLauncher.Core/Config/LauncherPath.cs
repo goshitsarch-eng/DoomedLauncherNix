@@ -65,7 +65,14 @@ namespace DoomLauncher
             return Directory.GetCurrentDirectory();
         }
 
-        public static bool IsInstalled() => !File.Exists(Path.Combine(Directory.GetCurrentDirectory(), DbDataSourceAdapter.DatabaseFileName)) && !File.Exists(Path.Combine(Directory.GetCurrentDirectory(), DbDataSourceAdapter.InitDatabaseFileName));
+        public static bool IsInstalled()
+        {
+            // Flatpak installs the sqlite next to the read-only /app binary. Always use XDG.
+            if (SandboxHost.IsFlatpak)
+                return true;
+            return !File.Exists(Path.Combine(Directory.GetCurrentDirectory(), DbDataSourceAdapter.DatabaseFileName))
+                && !File.Exists(Path.Combine(Directory.GetCurrentDirectory(), DbDataSourceAdapter.InitDatabaseFileName));
+        }
 
         public string GetFullPath(string fileName = "")
         {

@@ -23,7 +23,9 @@ dotnet run --project src/DoomLauncher.Gtk/DoomLauncher.Gtk.csproj
 
 If `DoomLauncher.sqlite` is next to the executable (or current directory), the app runs in portable mode. Otherwise it uses `$XDG_DATA_HOME/doomlauncher` (default `~/.local/share/doomlauncher`).
 
-A `.desktop` file is written to `~/.local/share/applications` on first launch.
+When the launcher **itself** is a Flatpak, data always goes under the sandbox XDG directory (`~/.var/app/io.github.doomedlaunchernix.DoomLauncher/data/doomlauncher`). The sqlite next to `/app/bin` is read-only and is not treated as portable mode.
+
+A `.desktop` file is written to `~/.local/share/applications` on first launch for a native install. A Flatpak build ships its own desktop file and skips that write.
 
 ## Linux replacements for Windows-only pieces
 
@@ -54,9 +56,21 @@ The assistant:
 1. Detects GZDoom and other ports on `PATH`, in `/usr/bin`, as a Flatpak (`org.zdoom.GZDoom`), or as a snap.
 2. Can run `flatpak install --user flathub org.zdoom.GZDoom` when Flatpak is available.
 3. Imports IWADs from Steam/GOG/Heroic/Lutris, a file picker, or a Freedoom download.
-4. Searches the Doomworld idgames archive (featured mapsets plus free search) and downloads into the library, with **Download and play**.
+4. Downloads featured mods from **idgames, GitHub, Romero Games**, and other community sites, or opens ModDB/Codeberg pages when a direct zip is not allowed. **Download and play** still works.
 
-**Get mods…** in the header opens the same idgames browser without the rest of setup.
+**Get mods…** in the header opens that catalog (featured, idgames search, community site links) without the rest of setup.
+
+### Featured sources
+
+| Source | Examples | What the launcher does |
+|---|---|---|
+| Doomworld /idgames | Valiant, Eviternity, Gossip, Sunless Empire | Search + auto-download into the library |
+| GitHub releases | Beautiful Doom PK3, Freedoom | Resolve the latest matching asset, with a pinned fallback URL |
+| GitHub archive zip | Project Brutality `PB_Staging` | Direct zip URL, auto-download |
+| Romero Games | SIGIL, SIGIL II | Official free zip URLs, auto-download |
+| ModDB / Codeberg | Brutal Doom, Ashes 2063, Hedon, Hideous Destructor | **Open page** (those sites do not offer a stable direct file URL) |
+
+Community site bookmarks include Cacowards, Realm667, DSDA, ZDoom forums, and DoomWiki.
 
 ### How to record a port
 
@@ -75,6 +89,29 @@ flatpak run --filesystem=host --filesystem=home org.zdoom.GZDoom -- <iwad and -f
 
 `--filesystem=host` is required so the sandbox can read IWADs and mods under `~/.local/share/doomlauncher`. ExtraParameters stay Doom arguments; they are not used as the Flatpak wrapper.
 
+When **this launcher** is itself a Flatpak, the same GZDoom command is prefixed with `flatpak-spawn --host --` so host Flatpak/snap/PATH binaries stay reachable, and host GZDoom can still see files under `~/.var/app/io.github.doomedlaunchernix.DoomLauncher/`.
+
 **Source Ports…** has **Detect GZDoom / ports…**. The edit dialog can fill the fields from whatever was detected.
 
 GZDoom-family ports (`gzdoom`, `uzdoom`, `vkdoom`, Flatpak app IDs under `org.zdoom`) use ZDoom save/stat handling, including `~/.config/gzdoom` and `~/.var/app/org.zdoom.GZDoom/config/gzdoom`.
+
+## Running as a Flatpak
+
+A starter manifest lives in `flatpak/io.github.doomedlaunchernix.DoomLauncher.yml`. It needs network (idgames/GitHub/Romero downloads), Wayland/X11, DRI, home/host filesystems (Steam libraries and wad folders), and `talk-name=org.freedesktop.Flatpak` so `flatpak-spawn --host` can start GZDoom and `flatpak` on the host.
+
+```bash
+flatpak-builder --user --install --force-clean build-dir flatpak/io.github.doomedlaunchernix.DoomLauncher.yml
+flatpak run io.github.doomedlaunchernix.DoomLauncher
+```
+
+Inside that sandbox the launcher:
+
+* Stores the database under XDG, not next to the `/app` binary
+* Detects host `gzdoom` / `flatpak` / `snap` through `flatpak-spawn --host`
+* Opens HTTP(S) pages through the desktop portal
+* Does not overwrite the Flatpak-provided `.desktop` file
+
+## Screenshot
+
+image::docs/linux-screenshot.png[Get mods dialog on Linux]
+

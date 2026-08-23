@@ -4,10 +4,16 @@ https://ci.appveyor.com/project/hobomaster22/doomlauncher[image:https://ci.appve
 
 image:https://api.codacy.com/project/badge/Grade/f77deda96cfb4b90a201d09cb0014009[link="https://app.codacy.com/manual/nstlaurent/DoomLauncher?utm_source=github.com&utm_medium=referral&utm_content=nstlaurent/DoomLauncher&utm_campaign=Badge_Grade_Settings"]
 
-Doom Launcher is a _Doom_ frontend for Windows PC. Instead of being a
-simple utility to launch your files, it serves as database for all your
+Doom Launcher is a _Doom_ frontend and wad library. Instead of being a
+simple utility to launch your files, it serves as a database for all your
 _Doom_ engine games and mods. It can be compared to https://www.quaddicted.com/tools/quake_injector[Quake Injector],
 a popular tool for _Quake_.
+
+Windows uses the original WinForms app. Linux uses a GTK 4 + libadwaita
+frontend that can also run as a Flatpak.
+
+image::docs/linux-screenshot.png[Get mods on Linux]
+*Get mods* on Linux: featured downloads from idgames, GitHub, Romero Games, plus community sites such as ModDB when a direct zip is not available.
 
 image::https://i.imgur.com/TIg4kNK.png[IWads Tile View Showcase]
 Large tile view for IWads tab. IWADs such as _Freedoom_ and _Heretic_ can be played with Doom Launcher.
@@ -18,6 +24,7 @@ Large tile view for a custom tag named "Playing". Doom Launcher can play custom 
 == Features
 
 * Direct download and metadata update from /idgames (through API).
+* Featured auto-downloads from GitHub (Beautiful Doom, Project Brutality, Freedoom) and official Romero SIGIL zips; ModDB and other hubs as open-in-browser links.
 * Add ZIP archives containing WAD/PK3/DEH/TXT files.
 * Automatic scraping of title, author, release date and description
 from included text files.
@@ -28,39 +35,57 @@ from included text files.
 * Set launch parameters and warp into any map in a file.
 * Select specific files within a ZIP archive.
 * Tag files with custom colored tags.
-* Screen filters to simulate CRT monitors.
+* Screen filters to simulate CRT monitors (Windows play overlay).
 * Record play-statistics for each map completed in a play session.
 Supported source ports includes ZDoom, PrBoom+, CNDoom, Chocolate Doom,
 and Crispy Doom.
 * Automatic daily database backups (SQLite database files).
 * Create shortcuts to quickly launch files.
+* Linux: detect GZDoom on PATH, as Flatpak, or snap; first-run setup; works when the launcher itself is a Flatpak (`flatpak-spawn --host`).
 
 Many more features are documented in the Help file. Please read it if
 you have any concerns regarding certain features.
 
-Doom Launcher is written by Hobomaster22 in C# and requires .NET 4.5.
+Doom Launcher is written by Hobomaster22 in C#. The Windows UI requires
+.NET Framework 4.8. The Linux UI requires .NET 8, GTK 4, and libadwaita.
 If you want to report bugs or suggest features, submit issues to
 the GitHub repository. To contribute to Doom Launcher, fork a
 copy of the repository and submit your changes via a pull request.
 
-== Building Doom Launcher
+== Linux (GTK 4)
+
+See link:LINUX.md[LINUX.md] for the GTK frontend, Flatpak notes, and source-port setup.
+
+```bash
+sudo apt install dotnet-sdk-8.0 libgtk-4-1 libadwaita-1-0
+dotnet build DoomLauncher.Linux.sln
+dotnet run --project src/DoomLauncher.Gtk/DoomLauncher.Gtk.csproj
+```
+
+To install as a Flatpak from this tree:
+
+```bash
+flatpak-builder --user --install --force-clean build-dir flatpak/io.github.doomedlaunchernix.DoomLauncher.yml
+```
+
+== Building on Windows
 
 Download a copy of the repository onto your Windows system and open up
 the solution file on Visual Studio. Visual Studio 2017 or later is
 recommended. You may create new unit tests to help verify that your
 changes work before submitting them.
 
-Doom Launcher currently supports Windows 7 and later. Mac and Linux are
-unsupported.
+Doom Launcher currently supports Windows 7 and later. Linux is supported
+through `DoomLauncher.Linux.sln` as described above.
 
-In order to build the Setup module for Visual Studio 2022, you may need to separately install 
-support for Installer projects: 
-https://marketplace.visualstudio.com/items?itemName=VisualStudioClient.MicrosoftVisualStudio2022InstallerProjects 
+In order to build the Setup module for Visual Studio 2022, you may need to separately install
+support for Installer projects:
+https://marketplace.visualstudio.com/items?itemName=VisualStudioClient.MicrosoftVisualStudio2022InstallerProjects
 
 
 == Development Tools
 
-SQLite Browser. Great tool for viewing and editing the DoomLauncher.sqlite database: 
+SQLite Browser. Great tool for viewing and editing the DoomLauncher.sqlite database:
 https://sqlitebrowser.org/
 
 SonarLint. A great code analysis extension for Visual Studio. Highly recommended and used for most of Doom Launcher's development:
@@ -72,4 +97,4 @@ GitHub Repository: https://github.com/nstlaurent/DoomLauncher
 
 Doomworld Thread: https://www.doomworld.com/vb/doom-general/69346-doom-launcher-doom-frontend-database/
 
-Realm667: https://realm667.com/index.php/en/kunena/doom-launcher 
+Realm667: https://realm667.com/index.php/en/kunena/doom-launcher

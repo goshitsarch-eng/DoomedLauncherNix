@@ -3,6 +3,8 @@ using DoomLauncher;
 using UnitTest.Tests;
 using System.IO;
 
+[assembly: DoNotParallelize]
+
 namespace UnitTest
 {
     [TestClass]
