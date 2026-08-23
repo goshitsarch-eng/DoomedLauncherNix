@@ -174,6 +174,23 @@ namespace UnitTest.Tests
         }
 
         [TestMethod]
+        public void FlatpakDisablesInPlaceApplicationUpdates()
+        {
+            bool? previous = SandboxHost.OverrideIsFlatpak;
+            try
+            {
+                SandboxHost.OverrideIsFlatpak = true;
+                Assert.IsFalse(SandboxHost.SupportsInPlaceUpdate);
+                SandboxHost.OverrideIsFlatpak = false;
+                Assert.IsTrue(SandboxHost.SupportsInPlaceUpdate);
+            }
+            finally
+            {
+                SandboxHost.OverrideIsFlatpak = previous;
+            }
+        }
+
+        [TestMethod]
         public void CreateStartInfoWrapsWhenSandboxed()
         {
             var port = new SourcePortData
