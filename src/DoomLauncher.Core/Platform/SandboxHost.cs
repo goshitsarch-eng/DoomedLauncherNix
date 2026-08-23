@@ -11,7 +11,7 @@ namespace DoomLauncher
     public static class SandboxHost
     {
         public const string SpawnBinary = "flatpak-spawn";
-        public const string DefaultAppId = "io.github.doomedlaunchernix.DoomLauncher";
+        public const string DefaultAppId = "com.goshapps.DoomLauncher";
 
         internal static bool? OverrideIsFlatpak { get; set; }
 

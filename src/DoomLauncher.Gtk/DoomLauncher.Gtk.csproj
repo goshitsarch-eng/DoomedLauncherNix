@@ -22,6 +22,6 @@
     <Content Include="..\..\DoomLauncher\Help.pdf" CopyToOutputDirectory="PreserveNewest" Link="Help.pdf" Condition="Exists('..\..\DoomLauncher\Help.pdf')" />
     <Content Include="..\DoomLauncher.Core\DoomLauncher.sqlite" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\DoomLauncher.Core\TileImages\*" CopyToOutputDirectory="PreserveNewest" Link="TileImages\%(Filename)%(Extension)" />
-    <Content Include="io.github.doomedlaunchernix.DoomLauncher.desktop" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="com.goshapps.DoomLauncher.desktop" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

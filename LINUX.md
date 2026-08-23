@@ -23,7 +23,7 @@ dotnet run --project src/DoomLauncher.Gtk/DoomLauncher.Gtk.csproj
 
 If `DoomLauncher.sqlite` is next to the executable (or current directory), the app runs in portable mode. Otherwise it uses `$XDG_DATA_HOME/doomlauncher` (default `~/.local/share/doomlauncher`).
 
-When the launcher **itself** is a Flatpak, data always goes under the sandbox XDG directory (`~/.var/app/io.github.doomedlaunchernix.DoomLauncher/data/doomlauncher`). The sqlite next to `/app/bin` is read-only and is not treated as portable mode.
+When the launcher **itself** is a Flatpak, data always goes under the sandbox XDG directory (`~/.var/app/com.goshapps.DoomLauncher/data/doomlauncher`). The sqlite next to `/app/bin` is read-only and is not treated as portable mode.
 
 A `.desktop` file is written to `~/.local/share/applications` on first launch for a native install. A Flatpak build ships its own desktop file and skips that write.
 
@@ -84,12 +84,12 @@ Community site bookmarks include Cacowards, Realm667, DSDA, ZDoom forums, and Do
 Flatpak launches as:
 
 ```text
-flatpak run --filesystem=host --filesystem=home org.zdoom.GZDoom -- <iwad and -file args>
+flatpak run --filesystem=host --filesystem=home org.zdoom.GZDoom -- <IWAD and -file args>
 ```
 
 `--filesystem=host` is required so the sandbox can read IWADs and mods under `~/.local/share/doomlauncher`. ExtraParameters stay Doom arguments; they are not used as the Flatpak wrapper.
 
-When **this launcher** is itself a Flatpak, the same GZDoom command is prefixed with `flatpak-spawn --host --` so host Flatpak/snap/PATH binaries stay reachable, and host GZDoom can still see files under `~/.var/app/io.github.doomedlaunchernix.DoomLauncher/`.
+When **this launcher** is itself a Flatpak, the same GZDoom command is prefixed with `flatpak-spawn --host --` so host Flatpak/snap/PATH binaries stay reachable, and host GZDoom can still see files under `~/.var/app/com.goshapps.DoomLauncher/`.
 
 **Source Ports…** has **Detect GZDoom / ports…**. The edit dialog can fill the fields from whatever was detected.
 
@@ -97,11 +97,11 @@ GZDoom-family ports (`gzdoom`, `uzdoom`, `vkdoom`, Flatpak app IDs under `org.zd
 
 ## Running as a Flatpak
 
-A starter manifest lives in `flatpak/io.github.doomedlaunchernix.DoomLauncher.yml`. It needs network (idgames/GitHub/Romero downloads), Wayland/X11, DRI, home/host filesystems (Steam libraries and wad folders), and `talk-name=org.freedesktop.Flatpak` so `flatpak-spawn --host` can start GZDoom and `flatpak` on the host.
+A starter manifest lives in `flatpak/com.goshapps.DoomLauncher.yml`. It needs network (idgames/GitHub/Romero downloads), Wayland/X11, DRI, home filesystem access (Steam libraries and WAD folders), and `talk-name=org.freedesktop.Flatpak` so `flatpak-spawn --host` can start GZDoom and `flatpak` on the host.
 
 ```bash
-flatpak-builder --user --install --force-clean build-dir flatpak/io.github.doomedlaunchernix.DoomLauncher.yml
-flatpak run io.github.doomedlaunchernix.DoomLauncher
+flatpak-builder --user --install --force-clean build-dir flatpak/com.goshapps.DoomLauncher.yml
+flatpak run com.goshapps.DoomLauncher
 ```
 
 Inside that sandbox the launcher:

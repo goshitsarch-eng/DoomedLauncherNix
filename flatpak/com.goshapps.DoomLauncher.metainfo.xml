@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.doomedlaunchernix.DoomLauncher</id>
+  <id>com.goshapps.DoomLauncher</id>
   <name>Doom Launcher</name>
-  <summary>Doom frontend and wad library for Linux</summary>
+  <summary>Doom frontend and WAD library for Linux</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
+  <developer id="com.goshapps">
+    <name>Gosh Apps</name>
+  </developer>
   <description>
     <p>
       Doom Launcher is a library for Doom engine games and mods. On Linux it
@@ -13,8 +16,18 @@
       and other community sites.
     </p>
   </description>
-  <launchable type="desktop-id">io.github.doomedlaunchernix.DoomLauncher.desktop</launchable>
+  <launchable type="desktop-id">com.goshapps.DoomLauncher.desktop</launchable>
   <url type="homepage">https://github.com/goshitsarch-eng/DoomedLauncherNix</url>
+  <url type="bugtracker">https://github.com/goshitsarch-eng/DoomedLauncherNix/issues</url>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/goshitsarch-eng/DoomedLauncherNix/9374f00577b0eb653b846b79bd1d8a46a9a6a0ed/docs/linux-main-window.png</image>
+      <caption>Browse and launch a Doom library</caption>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="3.7.9.2" date="2026-08-23"/>
+  </releases>
   <provides>
     <binary>DoomLauncher</binary>
   </provides>

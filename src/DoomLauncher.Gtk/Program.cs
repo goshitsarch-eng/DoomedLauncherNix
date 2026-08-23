@@ -17,7 +17,7 @@ namespace DoomLauncher.Linux
                 if (!string.IsNullOrEmpty(dir))
                     Directory.SetCurrentDirectory(dir);
 
-                var application = Adw.Application.New("io.github.doomedlaunchernix.DoomLauncher", Gio.ApplicationFlags.HandlesOpen);
+                var application = Adw.Application.New("com.goshapps.DoomLauncher", Gio.ApplicationFlags.HandlesOpen);
                 LaunchArgs launchArgs = ParseLaunchArgs(args);
                 MainWindow window = null;
 
