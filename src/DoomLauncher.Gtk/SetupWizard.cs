@@ -269,7 +269,8 @@ namespace DoomLauncher.Linux
                     ? $"Using {gz.Name} as your GZDoom-family port{(added.Count > 0 ? $". Added {added.Count} detected port(s)." : ".")}"
                     : $"{ports.Count} port(s) configured. Add GZDoom if you want the usual mod setup.");
             }
-            m_host.Reload?.Invoke();
+            if (added.Count > 0)
+                m_host.Reload?.Invoke();
         }
 
         private void RefreshIwads()
