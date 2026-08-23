@@ -21,24 +21,35 @@ namespace DoomLauncher.Linux
                 LaunchArgs launchArgs = ParseLaunchArgs(args);
                 MainWindow window = null;
 
-                application.OnActivate += (sender, eventArgs) =>
+                MainWindow EnsureWindow(Adw.Application app, LaunchArgs initialArgs)
                 {
                     if (window != null)
-                    {
-                        window.Present();
-                        return;
-                    }
-
+                        return window;
                     if (!AppBootstrap.Init(out string error))
                     {
                         GtkUtil.Alert(null, "Doom Launcher", error ?? "Failed to initialize.");
-                        return;
+                        return null;
                     }
-
                     AppBootstrap.CreateLinuxDesktopEntry();
                     GtkUtil.ApplyColorTheme(DataCache.Instance.AppConfiguration.ColorTheme);
-                    window = new MainWindow((Adw.Application)sender, launchArgs);
-                    window.Present();
+                    window = new MainWindow(app, initialArgs);
+                    return window;
+                }
+
+                application.OnActivate += (sender, eventArgs) =>
+                {
+                    EnsureWindow((Adw.Application)sender, launchArgs)?.Present();
+                };
+
+                application.OnOpen += (sender, eventArgs) =>
+                {
+                    string[] paths = eventArgs.Files
+                        .Select(file => file.GetPath())
+                        .Where(path => !string.IsNullOrWhiteSpace(path))
+                        .ToArray();
+                    var openWindow = EnsureWindow((Adw.Application)sender, new LaunchArgs());
+                    openWindow?.OpenFiles(paths);
+                    openWindow?.Present();
                 };
 
                 application.OnShutdown += (sender, eventArgs) =>

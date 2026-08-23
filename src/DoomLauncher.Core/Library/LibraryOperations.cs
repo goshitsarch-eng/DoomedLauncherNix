@@ -503,7 +503,7 @@ namespace DoomLauncher
             if (string.IsNullOrEmpty(desktop))
                 desktop = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop");
             string dest = Path.Combine(desktop, fileName + ".desktop");
-            string exe = Path.Combine(AppContext.BaseDirectory, "DoomLauncher");
+            string exe = GetDesktopShortcutExecutable();
             string args = autoPlay && gameFile.GameFileID.HasValue
                 ? $"-LaunchGameFileID {gameFile.GameFileID} -AutoClose"
                 : $"\"{GetGameFilePath(gameFile)}\"";
@@ -512,12 +512,26 @@ Type=Application
 Name=Doom Launcher - {fileName}
 Comment={gameFile.FileName}
 Exec={exe} {args}
-Icon={Path.Combine(AppContext.BaseDirectory, "DoomLauncher.ico")}
+Icon={GetDesktopShortcutIcon()}
 Terminal=false
 Categories=Game;
 ");
             try { Process.Start("chmod", $"+x \"{dest}\""); } catch { }
             return dest;
+        }
+
+        internal static string GetDesktopShortcutExecutable()
+        {
+            return SandboxHost.IsFlatpak
+                ? $"flatpak run {SandboxHost.DefaultAppId}"
+                : Path.Combine(AppContext.BaseDirectory, "DoomLauncher");
+        }
+
+        internal static string GetDesktopShortcutIcon()
+        {
+            return SandboxHost.IsFlatpak
+                ? SandboxHost.DefaultAppId
+                : Path.Combine(AppContext.BaseDirectory, "DoomLauncher.ico");
         }
 
         public static bool CreateZipFromDirectory(string folderPath, string zipFileName)

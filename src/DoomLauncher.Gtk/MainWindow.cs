@@ -1260,20 +1260,32 @@ namespace DoomLauncher.Linux
             }
         }
 
-        private void HandleLaunchArgs()
+        public void OpenFiles(IEnumerable<string> fileNames)
         {
-            if (!string.IsNullOrEmpty(m_launchArgs.LaunchFileName))
+            string[] paths = fileNames
+                .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            if (paths.Length == 0)
+                return;
+            if (paths.Length == 1)
             {
-                var existing = DataCache.Instance.DataSourceAdapter.GetGameFile(m_launchArgs.LaunchFileName);
+                var existing = DataCache.Instance.DataSourceAdapter.GetGameFile(paths[0]);
                 if (existing != null)
                 {
                     m_selected.Clear();
                     m_selected.Add(existing);
                     HandlePlay(false);
+                    return;
                 }
-                else if (File.Exists(m_launchArgs.LaunchFileName))
-                    AddFiles(new[] { m_launchArgs.LaunchFileName }, AddFileType.GameFile);
             }
+            AddFiles(paths, AddFileType.GameFile);
+        }
+
+        private void HandleLaunchArgs()
+        {
+            if (!string.IsNullOrEmpty(m_launchArgs.LaunchFileName))
+                OpenFiles(new[] { m_launchArgs.LaunchFileName });
 
             if (m_launchArgs.LaunchGameFileID.HasValue)
             {
