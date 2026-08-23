@@ -13,6 +13,11 @@ namespace UnitTest
         [AssemblyInitialize()]
         public static void TestInitialize(TestContext testContext)
         {
+            // The test process may itself run inside a Flatpak SDK while validating
+            // the application package. Unit tests exercise native-host semantics
+            // unless a test passes sandboxed: true explicitly.
+            SandboxHost.OverrideIsFlatpak = false;
+
             DbDataSourceAdapter adapter = (DbDataSourceAdapter)TestUtil.CreateAdapter();
 
             DataCache.Instance.Init(adapter);

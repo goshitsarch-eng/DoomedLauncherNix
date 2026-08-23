@@ -68,7 +68,7 @@ dotnet run --project src/DoomLauncher.Gtk/DoomLauncher.Gtk.csproj
 To install as a Flatpak from this tree:
 
 ```bash
-flatpak-builder --user --install --force-clean build-dir flatpak/io.github.doomedlaunchernix.DoomLauncher.yml
+flatpak-builder --user --install --force-clean build-dir flatpak/com.goshapps.DoomLauncher.yml
 ```
 
 == Building on Windows

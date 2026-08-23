@@ -216,13 +216,13 @@ namespace DoomLauncher
                 string apps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share", "applications");
                 Directory.CreateDirectory(apps);
                 string exe = Path.Combine(AppContext.BaseDirectory, "DoomLauncher");
-                string desktop = Path.Combine(apps, "io.github.doomedlaunchernix.DoomLauncher.desktop");
+                string desktop = Path.Combine(apps, "com.goshapps.DoomLauncher.desktop");
                 File.WriteAllText(desktop, $@"[Desktop Entry]
 Type=Application
 Name=Doom Launcher
 Comment=Doom frontend and wad library
 Exec=""{exe}"" %F
-Icon=io.github.doomedlaunchernix.DoomLauncher
+Icon=com.goshapps.DoomLauncher
 Terminal=false
 Categories=Game;
 MimeType=application/x-doom;application/x-wad;

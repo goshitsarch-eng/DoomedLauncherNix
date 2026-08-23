@@ -1,21 +1,19 @@
-id: io.github.doomedlaunchernix.DoomLauncher
+id: com.goshapps.DoomLauncher
 runtime: org.gnome.Platform
-runtime-version: '47'
+runtime-version: '49'
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.dotnet8
+branch: stable
 command: DoomLauncher
 finish-args:
   - --share=ipc
   - --share=network
   - --socket=wayland
   - --socket=fallback-x11
-  - --socket=pulseaudio
   - --device=dri
-  - --filesystem=host
   - --filesystem=home
   - --talk-name=org.freedesktop.Flatpak
-  - --talk-name=org.freedesktop.portal.Desktop
   - --env=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 modules:
   - name: doomlauncher
@@ -34,6 +32,8 @@ modules:
     build-commands:
       - dotnet publish src/DoomLauncher.Gtk/DoomLauncher.Gtk.csproj -c Release -r linux-x64 --self-contained true -o ${FLATPAK_DEST}/lib/doomlauncher --source nuget-sources
       - install -Dm755 flatpak/DoomLauncher.in ${FLATPAK_DEST}/bin/DoomLauncher
-      - install -Dm644 src/DoomLauncher.Gtk/io.github.doomedlaunchernix.DoomLauncher.desktop ${FLATPAK_DEST}/share/applications/io.github.doomedlaunchernix.DoomLauncher.desktop
-      - install -Dm644 flatpak/io.github.doomedlaunchernix.DoomLauncher.metainfo.xml ${FLATPAK_DEST}/share/metainfo/io.github.doomedlaunchernix.DoomLauncher.metainfo.xml
-      - install -Dm644 flatpak/io.github.doomedlaunchernix.DoomLauncher.png ${FLATPAK_DEST}/share/icons/hicolor/256x256/apps/io.github.doomedlaunchernix.DoomLauncher.png
+      - install -Dm644 src/DoomLauncher.Gtk/com.goshapps.DoomLauncher.desktop ${FLATPAK_DEST}/share/applications/com.goshapps.DoomLauncher.desktop
+      - install -Dm644 flatpak/com.goshapps.DoomLauncher.metainfo.xml ${FLATPAK_DEST}/share/metainfo/com.goshapps.DoomLauncher.metainfo.xml
+      - install -Dm644 flatpak/com.goshapps.DoomLauncher.png ${FLATPAK_DEST}/share/icons/hicolor/256x256/apps/com.goshapps.DoomLauncher.png
+      - install -Dm644 LICENSE ${FLATPAK_DEST}/share/licenses/com.goshapps.DoomLauncher/LICENSE
+      - install -Dm644 THIRD-PARTY-NOTICES.md ${FLATPAK_DEST}/share/licenses/com.goshapps.DoomLauncher/THIRD-PARTY-NOTICES.md
