@@ -1,17 +1,18 @@
 ﻿using SharpCompress.Archives.Rar;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace DoomLauncher.Archive.Rar
 {
     public class RarArchiveReader : IArchiveReader
     {
-        private readonly RarArchive m_archive;
+        private readonly SharpCompress.Archives.IArchive m_archive;
         private readonly RarArchiveEntry[] m_entries;
 
         public RarArchiveReader(string file)
         {
-            m_archive = RarArchive.Open(file);
+            m_archive = RarArchive.OpenArchive(new FileInfo(file));
             m_entries = m_archive.Entries
                 .Where(RarArchiveEntry.IsValid)
                 .Select(x => new RarArchiveEntry(x as SharpCompress.Archives.Rar.RarArchiveEntry))

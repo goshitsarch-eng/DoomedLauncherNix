@@ -8,12 +8,12 @@ namespace DoomLauncher.Archive.SevenZip
 {
     public class SevenZipArchiveReader : IArchiveReader
     {
-        private readonly SevenZipArchive m_archive;
+        private readonly SharpCompress.Archives.IArchive m_archive;
         private readonly MemoryStreamManager m_streamManager = new MemoryStreamManager();
 
         public SevenZipArchiveReader(string file)
         {
-            m_archive = SevenZipArchive.Open(file);
+            m_archive = SevenZipArchive.OpenArchive(new FileInfo(file));
         }
 
         public IEnumerable<IArchiveEntry> Entries
