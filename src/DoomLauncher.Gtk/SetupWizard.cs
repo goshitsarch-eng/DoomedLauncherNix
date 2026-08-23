@@ -122,7 +122,7 @@ namespace DoomLauncher.Linux
             var title = Gtk.Label.New("Custom Doom, with less setup");
             title.AddCssClass("title-1");
             title.SetXalign(0);
-            var text = Gtk.Label.New("This assistant finds GZDoom even when it is a Flatpak, imports Doom IWADs (or Freedoom), then helps you download wads from idgames and launch them.");
+            var text = Gtk.Label.New("This assistant finds GZDoom even when it is a Flatpak (including when this launcher is a Flatpak), imports Doom IWADs (or Freedoom), then helps you download mods from idgames, GitHub, Romero Games, and other community sites.");
             text.SetWrap(true);
             text.SetXalign(0);
             box.Append(title);
@@ -130,7 +130,7 @@ namespace DoomLauncher.Linux
             box.Append(Bullet("Detect distro, PATH, Flatpak, and snap builds of GZDoom and other ports."));
             box.Append(Bullet("Install GZDoom from Flathub if nothing is on this computer yet."));
             box.Append(Bullet("Add IWADs from Steam/GOG/Heroic/Lutris, a file picker, or Freedoom."));
-            box.Append(Bullet("Download featured mods and play them as soon as they land in your library."));
+            box.Append(Bullet("Download featured mods from idgames, GitHub, and Romero (or open ModDB pages) and play them as soon as they land in your library."));
             return box;
         }
 
@@ -236,7 +236,7 @@ namespace DoomLauncher.Linux
             title.AddCssClass("title-1");
             title.SetXalign(0);
             box.Append(title);
-            box.Append(Wrapped("Use Play on any library item. The Id Games tab and Get mods… stay available whenever you want another wad. Re-open this assistant from the menu if you install GZDoom later or switch to a Flatpak build."));
+            box.Append(Wrapped("Use Play on any library item. Get mods… covers idgames plus GitHub, Romero, ModDB, and other community pages. Re-open this assistant from the menu if you install GZDoom later or switch to a Flatpak build."));
             box.Append(GtkUtil.Button("Open Get mods…", () =>
                 GetModsDialog.Show(m_window, m_host.IdGames, m_host.Download)));
             return box;

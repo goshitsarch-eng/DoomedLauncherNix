@@ -200,7 +200,7 @@ namespace DoomLauncher
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
-            return Process.Start(start);
+            return Process.Start(SandboxHost.WrapForHost(start));
         }
 
         private static string QuoteForBash(string command)
@@ -214,7 +214,7 @@ namespace DoomLauncher
                 return string.Empty;
             try
             {
-                var start = new ProcessStartInfo
+                var start = SandboxHost.WrapForHost(new ProcessStartInfo
                 {
                     FileName = fileName,
                     Arguments = arguments,
@@ -222,7 +222,7 @@ namespace DoomLauncher
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
-                };
+                });
                 using (var proc = Process.Start(start))
                 {
                     if (proc == null)

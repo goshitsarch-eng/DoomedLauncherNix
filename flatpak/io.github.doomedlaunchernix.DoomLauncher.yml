@@ -1,0 +1,37 @@
+id: io.github.doomedlaunchernix.DoomLauncher
+runtime: org.gnome.Platform
+runtime-version: '47'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.dotnet8
+command: DoomLauncher
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  - --device=dri
+  - --filesystem=host
+  - --filesystem=home
+  - --talk-name=org.freedesktop.Flatpak
+  - --talk-name=org.freedesktop.portal.Desktop
+  - --env=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+modules:
+  - name: doomlauncher
+    buildsystem: simple
+    build-options:
+      prepend-path: /usr/lib/sdk/dotnet8/bin
+      prepend-ld-library-path: /usr/lib/sdk/dotnet8/lib
+      env:
+        DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+        DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+        DOTNET_NOLOGO: '1'
+    sources:
+      - type: dir
+        path: ..
+    build-commands:
+      - dotnet publish src/DoomLauncher.Gtk/DoomLauncher.Gtk.csproj -c Release -o ${FLATPAK_DEST}/lib/doomlauncher
+      - install -Dm755 flatpak/DoomLauncher.in ${FLATPAK_DEST}/bin/DoomLauncher
+      - install -Dm644 src/DoomLauncher.Gtk/io.github.doomedlaunchernix.DoomLauncher.desktop ${FLATPAK_DEST}/share/applications/io.github.doomedlaunchernix.DoomLauncher.desktop
+      - install -Dm644 flatpak/io.github.doomedlaunchernix.DoomLauncher.metainfo.xml ${FLATPAK_DEST}/share/metainfo/io.github.doomedlaunchernix.DoomLauncher.metainfo.xml

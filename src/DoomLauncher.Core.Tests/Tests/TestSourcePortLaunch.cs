@@ -156,6 +156,57 @@ namespace UnitTest.Tests
             Assert.IsTrue(dirs.Any(x => x.IndexOf("gzdoom", StringComparison.OrdinalIgnoreCase) >= 0));
         }
 
+        [TestMethod]
+        public void SandboxWrapPrefixesFlatpakSpawn()
+        {
+            var inner = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "flatpak",
+                Arguments = "run --filesystem=host --filesystem=home org.zdoom.GZDoom -- -iwad doom2.wad",
+                UseShellExecute = false
+            };
+            var wrapped = SandboxHost.WrapForHost(inner, sandboxed: true);
+            Assert.AreEqual("flatpak-spawn", System.IO.Path.GetFileName(wrapped.FileName));
+            Assert.IsTrue(wrapped.Arguments.StartsWith("--host -- ", StringComparison.Ordinal));
+            Assert.IsTrue(wrapped.Arguments.Contains("flatpak run --filesystem=host"));
+            Assert.AreSame(inner, SandboxHost.WrapForHost(inner, sandboxed: false));
+            Assert.AreSame(wrapped, SandboxHost.WrapForHost(wrapped, sandboxed: true));
+        }
+
+        [TestMethod]
+        public void CreateStartInfoWrapsWhenSandboxed()
+        {
+            var port = new SourcePortData
+            {
+                Name = "GZDoom",
+                Executable = "flatpak:org.zdoom.GZDoom",
+                Directory = LauncherPath.NoPath,
+                FileOption = "-file"
+            };
+            var start = SourcePortLaunch.CreateStartInfo(port, "-iwad doom2.wad", Directory.GetCurrentDirectory(), sandboxed: true);
+            Assert.AreEqual("flatpak-spawn", Path.GetFileName(start.FileName));
+            Assert.IsTrue(start.Arguments.Contains("--host --"));
+            Assert.IsTrue(start.Arguments.Contains("org.zdoom.GZDoom --"));
+            Assert.IsTrue(start.Arguments.Contains("-iwad doom2.wad"));
+        }
+
+        [TestMethod]
+        public void FlatpakLauncherUsesXdgDataDirectory()
+        {
+            bool? previous = SandboxHost.OverrideIsFlatpak;
+            try
+            {
+                SandboxHost.OverrideIsFlatpak = true;
+                Assert.IsTrue(SandboxHost.IsFlatpak);
+                Assert.IsTrue(LauncherPath.IsInstalled());
+                Assert.AreEqual(PlatformPaths.GetXdgDataHome(), LauncherPath.GetDataDirectory());
+            }
+            finally
+            {
+                SandboxHost.OverrideIsFlatpak = previous;
+            }
+        }
+
         private static void WriteEntry(ZipArchive archive, string name, string content)
         {
             var entry = archive.CreateEntry(name);

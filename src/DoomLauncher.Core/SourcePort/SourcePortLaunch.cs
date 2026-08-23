@@ -119,10 +119,12 @@ namespace DoomLauncher.SourcePort
                 return FindOnPath("snap") != null;
             if (parsed.Kind == LaunchKind.Path)
                 return FindOnPath(parsed.FileName) != null;
-            return File.Exists(parsed.FileName);
+            if (File.Exists(parsed.FileName))
+                return true;
+            return SandboxHost.IsFlatpak && FindOnPath(Path.GetFileName(parsed.FileName)) != null;
         }
 
-        public static ProcessStartInfo CreateStartInfo(ISourcePortData sourcePort, string doomArguments, string workingDirectory)
+        public static ProcessStartInfo CreateStartInfo(ISourcePortData sourcePort, string doomArguments, string workingDirectory, bool? sandboxed = null)
         {
             var parsed = Parse(sourcePort);
             if (string.IsNullOrEmpty(workingDirectory) || !Directory.Exists(workingDirectory))
@@ -133,13 +135,14 @@ namespace DoomLauncher.SourcePort
                     workingDirectory = Directory.GetCurrentDirectory();
             }
 
-            return new ProcessStartInfo
+            var start = new ProcessStartInfo
             {
                 FileName = parsed.FileName,
                 Arguments = CombineArgs(parsed.PrefixArguments, doomArguments),
                 WorkingDirectory = workingDirectory,
                 UseShellExecute = false
             };
+            return SandboxHost.WrapForHost(start, sandboxed ?? SandboxHost.IsFlatpak);
         }
 
         public static string FormatCommand(ISourcePortData sourcePort, string doomArguments)
@@ -194,6 +197,9 @@ namespace DoomLauncher.SourcePort
                 {
                 }
             }
+
+            if (SandboxHost.IsFlatpak)
+                return SandboxHost.WhichOnHost(name);
 
             return null;
         }

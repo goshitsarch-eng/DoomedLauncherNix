@@ -437,6 +437,7 @@ namespace UnitTest.Tests
         public void ArchiveExists_RecognisesManagedGameFiles()
         {
             var gameFilesPath = new LauncherPath("GameFiles");
+            Directory.CreateDirectory(gameFilesPath.GetFullPath());
 
             var madeUpGameFile = CreateGameFile("madeup.zip", 14);
             Assert.IsFalse(madeUpGameFile.IsUnmanaged());
