@@ -35,7 +35,7 @@ A `.desktop` file is written to `~/.local/share/applications` on first launch.
 | Steam/GOG registry | `~/.steam/steam`, Flatpak/snap Steam, GOG/Heroic/Lutris folders |
 | `.lnk` / SendTo shortcuts | `.desktop` files on the desktop and in applications |
 | Immersive Win32 title bar | Adwaita header bar |
-| Source port `.exe` next to the port | Native binaries (`gzdoom`, etc.) on `PATH` or an absolute path |
+| Source port `.exe` next to the port | Native binaries (`gzdoom`) on `PATH`, absolute paths, or `flatpak:org.zdoom.GZDoom` / `snap:gzdoom` |
 
 The CRT/screen-filter overlay from Windows is stored on the play profile but is not composited over the game window on Linux.
 
@@ -45,6 +45,36 @@ The GTK UI includes the original main-window surface: search (title/author/filen
 
 Menus and dialogs cover add files/directory/IWADs/recursive, Steam/GOG load, source ports, utilities, Doom 64, create zip, settings, tag manager, play now/random, text generator, cumulative stats, about/help/manual update, view text, open archive, edit, resync, idgames metadata, sort/tag/utility/delete/rename, desktop shortcuts, play profiles (port, IWAD, map, skill, demo play/record, extra params, stats, latest save, additional/specific files, preview launch command).
 
-## Source ports
+## Source ports and first-run setup
 
-Add a port from **Source Ports…**. For distro packages set Executable to `gzdoom` (or the binary name) and Directory to `/usr/bin` or leave it empty so the launcher resolves `PATH`.
+On first launch (no source ports or no IWADs), the **Setup assistant** walks through GZDoom, IWADs, and mods. You can open it any time from the header or **Add → Setup assistant…**.
+
+The assistant:
+
+1. Detects GZDoom and other ports on `PATH`, in `/usr/bin`, as a Flatpak (`org.zdoom.GZDoom`), or as a snap.
+2. Can run `flatpak install --user flathub org.zdoom.GZDoom` when Flatpak is available.
+3. Imports IWADs from Steam/GOG/Heroic/Lutris, a file picker, or a Freedoom download.
+4. Searches the Doomworld idgames archive (featured mapsets plus free search) and downloads into the library, with **Download and play**.
+
+**Get mods…** in the header opens the same idgames browser without the rest of setup.
+
+### How to record a port
+
+| What you installed | Executable field | Directory |
+|---|---|---|
+| Distro package / binary on `PATH` | `gzdoom` | `/usr/bin` or empty |
+| Absolute binary | `gzdoom` | folder that contains it |
+| Flathub GZDoom | `flatpak:org.zdoom.GZDoom` | empty |
+| Snap | `snap:gzdoom` | empty |
+
+Flatpak launches as:
+
+```text
+flatpak run --filesystem=host --filesystem=home org.zdoom.GZDoom -- <iwad and -file args>
+```
+
+`--filesystem=host` is required so the sandbox can read IWADs and mods under `~/.local/share/doomlauncher`. ExtraParameters stay Doom arguments; they are not used as the Flatpak wrapper.
+
+**Source Ports…** has **Detect GZDoom / ports…**. The edit dialog can fill the fields from whatever was detected.
+
+GZDoom-family ports (`gzdoom`, `uzdoom`, `vkdoom`, Flatpak app IDs under `org.zdoom`) use ZDoom save/stat handling, including `~/.config/gzdoom` and `~/.var/app/org.zdoom.GZDoom/config/gzdoom`.

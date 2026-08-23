@@ -1,6 +1,7 @@
 ﻿using DoomLauncher.Adapters.Launch;
 using DoomLauncher.Config;
 using DoomLauncher.Interfaces;
+using DoomLauncher.SourcePort;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -44,24 +45,16 @@ namespace DoomLauncher
 
         public LaunchResult Launch(IGameFile gameFile, IEnumerable<IGameFile> addFiles, ISourcePortData sourcePort, bool isGameFileIwad)
         {
-            string executable = sourcePort.GetFullExecutablePath();
+            if (sourcePort == null)
+                return LaunchResult.Failure("No source port selected.");
+
+            if (!SourcePortLaunch.CanExecute(sourcePort))
+            {
+                return LaunchResult.Failure(
+                    "Source port executable was not found. Open the setup assistant to detect GZDoom (including Flatpak) or add a port.");
+            }
+
             string workingDir = sourcePort.Directory?.GetFullPath();
-
-            if (string.IsNullOrEmpty(workingDir) || !Directory.Exists(workingDir))
-            {
-                if (File.Exists(executable))
-                    workingDir = Path.GetDirectoryName(executable);
-                else
-                    workingDir = Directory.GetCurrentDirectory();
-            }
-
-            if (!File.Exists(executable) && !string.IsNullOrEmpty(sourcePort.Executable) &&
-                Path.GetDirectoryName(executable) == workingDir)
-            {
-                // Allow PATH-resolved binaries such as gzdoom on Linux.
-                executable = sourcePort.Executable;
-            }
-
             LaunchParameters launchParameters = GetLaunchParameters(gameFile, addFiles, sourcePort, isGameFileIwad);
             if (launchParameters.Failed)
             {
@@ -71,13 +64,7 @@ namespace DoomLauncher
             var gameLaunchInfo = new GameLaunchInfo(this, gameFile, sourcePort, launchParameters.RecordedFileName);
             try
             {
-                var startInfo = new ProcessStartInfo
-                {
-                    FileName = executable,
-                    Arguments = launchParameters.LaunchString,
-                    WorkingDirectory = workingDir,
-                    UseShellExecute = false
-                };
+                var startInfo = SourcePortLaunch.CreateStartInfo(sourcePort, launchParameters.LaunchString, workingDir);
                 Process proc = Process.Start(startInfo);
                 if (proc == null)
                     return LaunchResult.Failure("Failed to execute the source port process.");

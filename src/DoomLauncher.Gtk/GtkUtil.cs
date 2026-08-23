@@ -243,12 +243,28 @@ namespace DoomLauncher.Linux
 
         public static void ClearList(Gtk.ListBox list)
         {
-            list.RemoveAll();
+            if (list == null)
+                return;
+            var child = list.GetFirstChild();
+            while (child != null)
+            {
+                var next = child.GetNextSibling();
+                list.Remove(child);
+                child = next;
+            }
         }
 
         public static void ClearFlow(Gtk.FlowBox flow)
         {
-            flow.RemoveAll();
+            if (flow == null)
+                return;
+            var child = flow.GetFirstChild();
+            while (child != null)
+            {
+                var next = child.GetNextSibling();
+                flow.Remove(child);
+                child = next;
+            }
         }
 
         public static void SetPictureFromFile(Gtk.Picture picture, string path)
@@ -339,7 +355,10 @@ namespace DoomLauncher.Linux
             box.SetHalign(Gtk.Align.End);
             box.SetMarginTop(8);
             foreach (var button in buttons)
-                box.Append(button);
+            {
+                if (button != null)
+                    box.Append(button);
+            }
             return box;
         }
     }

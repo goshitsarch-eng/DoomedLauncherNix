@@ -307,7 +307,7 @@ namespace DoomLauncher
             var parameters = launcher.GetLaunchParameters(request.GameFile, request.AdditionalFiles, request.SelectedSourcePort, IsIwad(request.GameFile));
             if (parameters.Failed)
                 return parameters.ErrorMessage;
-            return parameters.LaunchString;
+            return SourcePort.SourcePortLaunch.FormatCommand(request.SelectedSourcePort, parameters.LaunchString);
         }
 
         public void DeleteGameFile(IGameFile gameFile)
