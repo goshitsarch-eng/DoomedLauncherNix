@@ -32,7 +32,7 @@ modules:
         path: ..
       - nuget-sources.json
     build-commands:
-      - dotnet publish src/DoomLauncher.Gtk/DoomLauncher.Gtk.csproj -c Release -o ${FLATPAK_DEST}/lib/doomlauncher --source nuget-sources
+      - dotnet publish src/DoomLauncher.Gtk/DoomLauncher.Gtk.csproj -c Release -r linux-x64 --self-contained true -o ${FLATPAK_DEST}/lib/doomlauncher --source nuget-sources
       - install -Dm755 flatpak/DoomLauncher.in ${FLATPAK_DEST}/bin/DoomLauncher
       - install -Dm644 src/DoomLauncher.Gtk/io.github.doomedlaunchernix.DoomLauncher.desktop ${FLATPAK_DEST}/share/applications/io.github.doomedlaunchernix.DoomLauncher.desktop
       - install -Dm644 flatpak/io.github.doomedlaunchernix.DoomLauncher.metainfo.xml ${FLATPAK_DEST}/share/metainfo/io.github.doomedlaunchernix.DoomLauncher.metainfo.xml
