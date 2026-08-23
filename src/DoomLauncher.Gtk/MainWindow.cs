@@ -333,7 +333,8 @@ namespace DoomLauncher.Linux
             var help = Gio.Menu.New();
             help.Append("About", "win.about");
             help.Append("Help", "win.help");
-            help.Append("Manual Update...", "win.manual-update");
+            if (SandboxHost.SupportsInPlaceUpdate)
+                help.Append("Manual Update...", "win.manual-update");
             menu.AppendSection(null, help);
             return menu;
         }
@@ -380,7 +381,8 @@ namespace DoomLauncher.Linux
             });
             AddAction("about", ShowAbout);
             AddAction("help", OpenHelp);
-            AddAction("manual-update", ManualUpdate);
+            if (SandboxHost.SupportsInPlaceUpdate)
+                AddAction("manual-update", ManualUpdate);
         }
 
         private void AddAction(string name, Action action)
@@ -1217,6 +1219,11 @@ namespace DoomLauncher.Linux
 
         private void ManualUpdate()
         {
+            if (!SandboxHost.SupportsInPlaceUpdate)
+            {
+                GtkUtil.Alert(this, "Updates are managed by Flatpak", "Use your software center or run flatpak update.");
+                return;
+            }
             GtkUtil.OpenFile(this, "Select update zip", path =>
             {
                 if (string.IsNullOrEmpty(path))

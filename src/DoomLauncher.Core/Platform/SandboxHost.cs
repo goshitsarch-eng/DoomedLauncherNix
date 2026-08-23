@@ -17,6 +17,8 @@ namespace DoomLauncher
 
         public static bool IsFlatpak => OverrideIsFlatpak ?? DetectIsFlatpak();
 
+        public static bool SupportsInPlaceUpdate => !IsFlatpak;
+
         private static bool DetectIsFlatpak()
         {
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("FLATPAK_ID")))
