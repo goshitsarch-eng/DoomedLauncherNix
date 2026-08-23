@@ -255,7 +255,12 @@ namespace DoomLauncher.Linux
             while (child != null)
             {
                 var next = child.GetNextSibling();
-                list.Remove(child);
+                // Only rows are managed children of the ListBox. Other widgets
+                // (e.g. a Popover parented to the list for a context menu) must
+                // not be passed to Remove(), which would emit
+                // "Tried to remove non-child" warnings and leave them orphaned.
+                if (child is Gtk.ListBoxRow)
+                    list.Remove(child);
                 child = next;
             }
         }
@@ -268,7 +273,8 @@ namespace DoomLauncher.Linux
             while (child != null)
             {
                 var next = child.GetNextSibling();
-                flow.Remove(child);
+                if (child is Gtk.FlowBoxChild)
+                    flow.Remove(child);
                 child = next;
             }
         }
