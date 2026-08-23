@@ -45,11 +45,11 @@ namespace DoomLauncher
                 {
                     if (entry.IsDirectory)
                     {
-                        Directory.CreateDirectory(Path.Combine(dir.FullName, entry.FullName));
+                        Directory.CreateDirectory(ArchivePath.CombineWithinDirectory(dir.FullName, entry.FullName));
                         continue;
                     }
 
-                    string dest = Path.Combine(dir.FullName, entry.FullName.Replace('/', Path.DirectorySeparatorChar));
+                    string dest = ArchivePath.CombineWithinDirectory(dir.FullName, entry.FullName);
                     Directory.CreateDirectory(Path.GetDirectoryName(dest));
                     entry.ExtractToFile(dest, true);
                 }
@@ -72,7 +72,7 @@ namespace DoomLauncher
 
                 var directoryEntries = archive.Entries.Where(entry => entry.IsDirectory);
                 foreach (var dirEntry in directoryEntries)
-                    Directory.CreateDirectory(Path.Combine(dir.FullName, dirEntry.FullName));
+                    Directory.CreateDirectory(ArchivePath.CombineWithinDirectory(dir.FullName, dirEntry.FullName));
 
                 foreach (var entry in archive.Entries)
                 {
@@ -83,10 +83,10 @@ namespace DoomLauncher
                     { 
                         string path = dir.FullName;
                         if (entry.FullName.Contains(Path.DirectorySeparatorChar) || entry.FullName.Contains(Path.AltDirectorySeparatorChar) || entry.FullName.Contains('/'))
-                            path = Path.Combine(dir.FullName, GetSubDirectoryPath(entry));
+                            path = ArchivePath.CombineWithinDirectory(dir.FullName, GetSubDirectoryPath(entry));
 
                         Directory.CreateDirectory(path);
-                        entry.ExtractToFile(Path.Combine(path, entry.Name), true);
+                        entry.ExtractToFile(ArchivePath.CombineWithinDirectory(path, ArchivePath.SafeFileName(entry.Name)), true);
                     }
                     catch
                     {
