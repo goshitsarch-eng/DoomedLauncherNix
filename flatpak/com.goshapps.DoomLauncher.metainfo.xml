@@ -11,14 +11,28 @@
   <description>
     <p>
       Doom Launcher is a library for Doom engine games and mods. On Linux it
-      uses GTK 4 and libadwaita. It can detect GZDoom as a native binary or
-      Flatpak, import IWADs, and download mods from idgames, GitHub, Romero Games,
-      and other community sites.
+      uses GTK 4 and libadwaita. It can detect GZDoom, UZDoom and other source ports
+      as native binaries, AppImages, Flatpaks or snaps, import IWADs, and download
+      mods from idgames, GitHub, Romero Games, and other community sites.
+    </p>
+    <p>
+      This is DoomedLauncherNix, a Linux-focused fork of Doom Launcher by
+      Hobomaster22 (nstlaurent). The launcher and its Windows version are their
+      work, shared under the GPL; this build adds the GTK 4 frontend and Flatpak
+      packaging. Please support the original project.
+    </p>
+    <p>
+      Doom Launcher is an independent tool. It is not affiliated with or endorsed by
+      id Software, and it ships no game data — you supply your own IWAD, or use a
+      free one such as Freedoom.
     </p>
   </description>
   <launchable type="desktop-id">com.goshapps.DoomLauncher.desktop</launchable>
   <url type="homepage">https://github.com/goshitsarch-eng/DoomedLauncherNix</url>
   <url type="bugtracker">https://github.com/goshitsarch-eng/DoomedLauncherNix/issues</url>
+  <url type="vcs-browser">https://github.com/goshitsarch-eng/DoomedLauncherNix</url>
+  <!-- The upstream project this is forked from. -->
+  <url type="help">https://github.com/nstlaurent/DoomLauncher</url>
   <screenshots>
     <screenshot type="default">
       <image>https://raw.githubusercontent.com/goshitsarch-eng/DoomedLauncherNix/9374f00577b0eb653b846b79bd1d8a46a9a6a0ed/docs/linux-main-window.png</image>

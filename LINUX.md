@@ -1,5 +1,13 @@
 # Doom Launcher on Linux
 
+> This is the Linux documentation for **DoomedLauncherNix**, a fork of
+> [Doom Launcher](https://github.com/nstlaurent/DoomLauncher) by
+> [Hobomaster22](https://github.com/nstlaurent). The launcher, its database, and its
+> Windows frontend are their work;
+> everything described in this file is the Linux stack added by the fork.
+> See [README.adoc](README.adoc) for the full attribution, and file Linux issues on
+> [this fork's tracker](https://github.com/goshitsarch-eng/DoomedLauncherNix/issues).
+
 This tree adds a **.NET 8** stack that runs Doom Launcher natively on Linux with **GTK 4** and **libadwaita**, matching the Windows WinForms frontend’s library, play, download, tag, settings, and archive features.
 
 Windows users should keep building `DoomLauncher/DoomLauncher.csproj` (.NET Framework 4.8 + WinForms). Linux users build this stack:
@@ -124,6 +132,18 @@ Inside that sandbox the launcher:
 * Launches host binaries by absolute path, so a port in `/usr/local/games` or `~/.local/bin` works even though the sandbox cannot see it
 * Opens HTTP(S) pages through the desktop portal
 * Does not overwrite the Flatpak-provided `.desktop` file
+
+## Credits
+
+The Linux port would not exist without the projects it builds on:
+
+* **[Doom Launcher](https://github.com/nstlaurent/DoomLauncher)** by [Hobomaster22](https://github.com/nstlaurent) — the launcher this forks, GPL-3.0-or-later.
+* **[GTK](https://www.gtk.org/)** and **[libadwaita](https://gitlab.gnome.org/GNOME/libadwaita)** — the toolkit and platform library.
+* **[gir.core](https://github.com/gircore/gir.core)** by Marcel Tiede — the C# bindings that make GTK 4 usable from .NET.
+* **[SharpCompress](https://github.com/adamhathcock/sharpcompress)**, **[ImageSharp](https://github.com/SixLabors/ImageSharp)**, **[Microsoft.Data.Sqlite](https://learn.microsoft.com/dotnet/standard/data/sqlite/)** — the cross-platform replacements for the Windows-only pieces.
+* **[GZDoom](https://zdoom.org/)** and the wider source port community, and **[Flathub](https://flathub.org/)** for distributing them.
+
+Full details, including licences, are in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ## Screenshot
 
