@@ -1,4 +1,5 @@
 using DoomLauncher.Config;
+using DoomLauncher.SourcePort;
 using GdkPixbuf;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
@@ -340,7 +341,15 @@ namespace DoomLauncher.Linux
         {
             GLib.Functions.IdleAdd(GLib.Constants.PRIORITY_DEFAULT_IDLE, () =>
             {
-                action();
+                // An exception thrown inside a GLib callback tears the main loop down, so a
+                // background continuation must never let one escape.
+                try
+                {
+                    action();
+                }
+                catch
+                {
+                }
                 return false;
             });
         }
@@ -348,6 +357,50 @@ namespace DoomLauncher.Linux
         public static Task RunBackground(Action action)
         {
             return Task.Run(action);
+        }
+
+        /// <summary>
+        /// Detects source ports on a worker thread. Detection runs <c>flatpak list</c>, scans the
+        /// filesystem, and inside our own Flatpak makes a host round trip per lookup; doing that
+        /// inline is what froze the window while it looked for GZDoom/UZDoom.
+        /// </summary>
+        public static void DetectPortsAsync(Action<IReadOnlyList<DetectedSourcePort>> found, bool refresh = false)
+        {
+            RunBackground(() =>
+            {
+                IReadOnlyList<DetectedSourcePort> detected;
+                try
+                {
+                    if (refresh)
+                        SourcePortLaunch.ClearCache();
+                    detected = SourcePortDetector.Detect();
+                }
+                catch
+                {
+                    detected = Array.Empty<DetectedSourcePort>();
+                }
+                RunOnUi(() => found?.Invoke(detected));
+            });
+        }
+
+        /// <summary>
+        /// Detects off the UI thread, then writes the new ports and calls back on the UI thread so
+        /// the database is only ever touched from one thread.
+        /// </summary>
+        public static void EnsureDetectedPortsAsync(Action<IReadOnlyList<ISourcePortData>> done, bool refresh = false)
+        {
+            DetectPortsAsync(detected =>
+            {
+                IReadOnlyList<ISourcePortData> added = Array.Empty<ISourcePortData>();
+                try
+                {
+                    added = SourcePortSetup.EnsurePorts(DataCache.Instance.DataSourceAdapter, detected);
+                }
+                catch
+                {
+                }
+                done?.Invoke(added);
+            }, refresh);
         }
 
         public static Gtk.Window ModalWindow(Gtk.Window parent, string title, int width, int height)

@@ -51,7 +51,8 @@ namespace DoomLauncher
             if (!SourcePortLaunch.CanExecute(sourcePort))
             {
                 return LaunchResult.Failure(
-                    "Source port executable was not found. Open the setup assistant to detect GZDoom (including Flatpak) or add a port.");
+                    $"Source port executable '{sourcePort.Executable}' was not found. Open the setup assistant to detect an installed port " +
+                    "(including Flatpak and snap builds), or enter the full directory that contains the binary.");
             }
 
             string workingDir = sourcePort.Directory?.GetFullPath();

@@ -30,16 +30,62 @@ namespace DoomLauncher.SourcePort
                 if (string.IsNullOrEmpty(xdgConfig))
                     xdgConfig = Path.Combine(home, ".config");
 
-                foreach (var name in new[] { "gzdoom", "uzdoom", "vkdoom", "lzdoom", "zandronum" })
+                foreach (var name in FamilyNames)
                     dirs.Add(Path.Combine(xdgConfig, name));
 
                 dirs.Add(Path.Combine(home, ".var", "app", "org.zdoom.GZDoom", "config", "gzdoom"));
                 dirs.Add(Path.Combine(home, ".var", "app", "org.zdoom.GZDoom", ".config", "gzdoom"));
                 dirs.Add(Path.Combine(home, ".var", "app", "org.zdoom.UZDoom", "config", "uzdoom"));
                 dirs.Add(Path.Combine(home, ".var", "app", "org.zdoom.VKDoom", "config", "vkdoom"));
+                dirs.AddRange(FlatpakConfigDirectories(home));
             }
 
             return dirs.Distinct(StringComparer.Ordinal).ToArray();
+        }
+
+        private static readonly string[] FamilyNames = { "gzdoom", "uzdoom", "vkdoom", "lzdoom", "zandronum" };
+
+        /// <summary>
+        /// Saves and statistics for a ZDoom-family port installed as a Flatpak live under
+        /// ~/.var/app/&lt;app id&gt;/config. The app id is not always org.zdoom.*, so look at what is
+        /// actually installed instead of only checking the three ids we happen to know.
+        /// </summary>
+        private static IEnumerable<string> FlatpakConfigDirectories(string home)
+        {
+            string root = Path.Combine(home, ".var", "app");
+            string[] apps;
+            try
+            {
+                if (!Directory.Exists(root))
+                    yield break;
+                apps = Directory.GetDirectories(root);
+            }
+            catch
+            {
+                yield break;
+            }
+
+            foreach (string app in apps)
+            {
+                foreach (string name in FamilyNames)
+                {
+                    foreach (string configRoot in new[] { "config", ".config" })
+                    {
+                        string candidate = Path.Combine(app, configRoot, name);
+                        bool exists;
+                        try
+                        {
+                            exists = Directory.Exists(candidate);
+                        }
+                        catch
+                        {
+                            exists = false;
+                        }
+                        if (exists)
+                            yield return candidate;
+                    }
+                }
+            }
         }
 
         public ZDoomSourcePortFlavor(ISourcePortData sourcePortData)

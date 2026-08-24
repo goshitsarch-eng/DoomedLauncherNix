@@ -1,7 +1,6 @@
 using DoomLauncher.SourcePort;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -41,6 +40,7 @@ namespace DoomLauncher
             ("uzdoom", "UZDoom"),
             ("vkdoom", "VKDoom"),
             ("lzdoom", "LZDoom"),
+            ("zdoom", "ZDoom"),
             ("zandronum", "Zandronum"),
             ("crispy-doom", "Crispy Doom"),
             ("chocolate-doom", "Chocolate Doom"),
@@ -49,7 +49,11 @@ namespace DoomLauncher
             ("woof", "Woof!"),
             ("helion", "Helion"),
             ("nyan-doom", "Nyan Doom"),
-            ("nugget-doom", "Nugget Doom")
+            ("nugget-doom", "Nugget Doom"),
+            ("doomretro", "DOOM Retro"),
+            ("eternity", "Eternity Engine"),
+            ("odamex", "Odamex"),
+            ("doomsday", "Doomsday")
         };
 
         public static readonly (string AppId, string Name)[] KnownFlatpaks =
@@ -64,9 +68,22 @@ namespace DoomLauncher
             ("gzdoom", "GZDoom (Snap)")
         };
 
+        /// <summary>
+        /// Detection spawns helper processes and touches the filesystem. Call it from a background
+        /// thread; the GTK front end does, because doing it inline froze the window.
+        /// </summary>
         public static IReadOnlyList<DetectedSourcePort> Detect()
         {
-            return Detect(null, TryReadProcess("flatpak", "list --app --columns=application"), TryReadProcess("snap", "list"));
+            // One host round trip for every candidate binary instead of one per name. "flatpak"
+            // and "snap" are primed too so the install hint and the per-port "is it installed"
+            // check can answer from the cache instead of spawning on the UI thread.
+            if (SandboxHost.IsFlatpak)
+            {
+                SandboxHost.ResetHostResponsive();
+                SandboxHost.PrimeHostLookups(KnownBinaries.Select(x => x.Binary).Concat(new[] { "flatpak", "snap" }));
+            }
+
+            return Detect(null, string.Join("\n", ListFlatpakApps()), TryReadProcess("snap", "list"));
         }
 
         public static IReadOnlyList<DetectedSourcePort> Detect(IEnumerable<string> searchPaths, string flatpakListOutput, string snapListOutput)
@@ -91,7 +108,9 @@ namespace DoomLauncher
                 add(new DetectedSourcePort
                 {
                     Name = name,
-                    Executable = binary,
+                    // Record the name on disk, not the name we searched for: a port shipped as
+                    // "UZDoom" must be launched as "UZDoom" on a case sensitive filesystem.
+                    Executable = Path.GetFileName(path),
                     Directory = Path.GetDirectoryName(path) ?? string.Empty,
                     Kind = DetectedSourcePortKind.Native,
                     Details = path,
@@ -100,16 +119,11 @@ namespace DoomLauncher
                 });
             }
 
-            foreach (var line in SplitLines(flatpakListOutput))
+            foreach (string appId in ParseFlatpakIds(flatpakListOutput))
             {
-                var known = KnownFlatpaks.FirstOrDefault(x => string.Equals(x.AppId, line, StringComparison.OrdinalIgnoreCase));
-                if (string.IsNullOrEmpty(known.AppId) && !line.StartsWith("org.zdoom.", StringComparison.OrdinalIgnoreCase))
-                    continue;
-                string appId = string.IsNullOrEmpty(known.AppId) ? line : known.AppId;
-                string name = string.IsNullOrEmpty(known.Name) ? appId + " (Flatpak)" : known.Name;
                 add(new DetectedSourcePort
                 {
-                    Name = name,
+                    Name = FlatpakDisplayName(appId),
                     Executable = SourcePortLaunch.FlatpakPrefix + appId,
                     Directory = string.Empty,
                     Kind = DetectedSourcePortKind.Flatpak,
@@ -142,9 +156,142 @@ namespace DoomLauncher
                 .ToList();
         }
 
+        /// <summary>
+        /// Every installed Flatpak app id, from <c>flatpak list</c> plus a direct read of the
+        /// per-user and system installation directories. The directory scan matters because the
+        /// <c>flatpak</c> binary is not on the PATH inside our own sandbox, and it is also what
+        /// keeps detection working when the CLI is missing entirely.
+        /// </summary>
+        public static IReadOnlyList<string> ListFlatpakApps()
+        {
+            var ids = new List<string>();
+            ids.AddRange(SplitLines(TryReadProcess("flatpak", "list --app --columns=application")));
+            ids.AddRange(ScanFlatpakInstallations());
+            return ids
+                .Select(x => x.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault())
+                .Where(x => !string.IsNullOrEmpty(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static IEnumerable<string> ScanFlatpakInstallations()
+        {
+            foreach (string root in FlatpakAppRoots())
+            {
+                string[] directories;
+                try
+                {
+                    if (!Directory.Exists(root))
+                        continue;
+                    directories = Directory.GetDirectories(root);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                foreach (string directory in directories)
+                {
+                    string id = Path.GetFileName(directory);
+                    if (!string.IsNullOrEmpty(id))
+                        yield return id;
+                }
+            }
+        }
+
+        private static IEnumerable<string> FlatpakAppRoots()
+        {
+            var roots = new List<string>();
+            string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+            string installation = Environment.GetEnvironmentVariable("FLATPAK_USER_DIR");
+            if (!string.IsNullOrEmpty(installation))
+                roots.Add(Path.Combine(installation, "app"));
+
+            string xdgData = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
+            if (!string.IsNullOrEmpty(xdgData))
+                roots.Add(Path.Combine(xdgData, "flatpak", "app"));
+
+            if (!string.IsNullOrEmpty(home))
+            {
+                // Our own sandbox redirects XDG_DATA_HOME into ~/.var/app, so ask for the real
+                // per-user installation by name as well.
+                roots.Add(Path.Combine(home, ".local", "share", "flatpak", "app"));
+            }
+
+            roots.Add("/var/lib/flatpak/app");
+            return roots.Distinct(StringComparer.Ordinal);
+        }
+
+        private static IEnumerable<string> ParseFlatpakIds(string flatpakListOutput)
+        {
+            foreach (string line in SplitLines(flatpakListOutput))
+            {
+                // "flatpak list" prints a header row and extra columns when attached to a terminal.
+                string appId = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                if (IsSourcePortAppId(appId))
+                    yield return appId;
+            }
+        }
+
+        /// <summary>
+        /// Recognises a Flatpak app id as a Doom source port. The old check only accepted ids
+        /// starting with <c>org.zdoom.</c>, so ports published under any other reverse-DNS name
+        /// (UZDoom, Woof, Crispy, DSDA) were never offered.
+        /// </summary>
+        public static bool IsSourcePortAppId(string appId)
+        {
+            if (string.IsNullOrWhiteSpace(appId))
+                return false;
+
+            appId = appId.Trim();
+            if (appId.IndexOf('.') < 0 || appId.Any(char.IsWhiteSpace))
+                return false;
+            if (appId.Equals(SandboxHost.DefaultAppId, StringComparison.OrdinalIgnoreCase) ||
+                appId.Equals(SandboxHost.AppId, StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (KnownFlatpaks.Any(x => string.Equals(x.AppId, appId, StringComparison.OrdinalIgnoreCase)))
+                return true;
+
+            string segment = Normalize(LastSegment(appId));
+            if (KnownBinaries.Any(x => Normalize(x.Binary) == segment))
+                return true;
+            if (segment.EndsWith("doom", StringComparison.Ordinal))
+                return true;
+
+            string whole = Normalize(appId);
+            return whole.Contains("zdoom") || whole.Contains("zandronum") || whole.Contains("doomsday");
+        }
+
+        private static string FlatpakDisplayName(string appId)
+        {
+            var known = KnownFlatpaks.FirstOrDefault(x => string.Equals(x.AppId, appId, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrEmpty(known.Name))
+                return known.Name;
+
+            string segment = LastSegment(appId);
+            var binary = KnownBinaries.FirstOrDefault(x => Normalize(x.Binary) == Normalize(segment));
+            return (string.IsNullOrEmpty(binary.Name) ? segment : binary.Name) + " (Flatpak)";
+        }
+
+        private static string LastSegment(string appId)
+        {
+            if (string.IsNullOrEmpty(appId))
+                return string.Empty;
+            int dot = appId.LastIndexOf('.');
+            return dot < 0 || dot == appId.Length - 1 ? appId : appId.Substring(dot + 1);
+        }
+
+        private static string Normalize(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return string.Empty;
+            return new string(value.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
+        }
+
         public static SourcePortInstallHint GetGzdoomInstallHint()
         {
-            if (SourcePortLaunch.FindOnPath("flatpak") != null)
+            if (SourcePortLaunch.FindOnPath("flatpak") != null || (SandboxHost.IsFlatpak && SandboxHost.CanRunHostCommands))
             {
                 return new SourcePortInstallHint
                 {
@@ -173,9 +320,7 @@ namespace DoomLauncher
             if (kind == DetectedSourcePortKind.Flatpak)
             {
                 string appId = string.IsNullOrEmpty(flatpakAppId) ? nameOrAppId : flatpakAppId;
-                string folder = appId != null && appId.IndexOf("UZDoom", StringComparison.OrdinalIgnoreCase) >= 0 ? "uzdoom" :
-                    appId != null && appId.IndexOf("VKDoom", StringComparison.OrdinalIgnoreCase) >= 0 ? "vkdoom" : "gzdoom";
-                return Path.Combine(home, ".var", "app", appId, "config", folder);
+                return Path.Combine(home, ".var", "app", appId ?? string.Empty, "config", ConfigFolderName(appId));
             }
 
             string xdg = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
@@ -187,20 +332,28 @@ namespace DoomLauncher
             return Path.Combine(xdg, native);
         }
 
-        public static Process StartInstall(SourcePortInstallHint hint)
+        private static string ConfigFolderName(string appId)
+        {
+            string whole = Normalize(appId);
+            foreach (string family in new[] { "uzdoom", "vkdoom", "lzdoom", "gzdoom", "zandronum" })
+            {
+                if (whole.Contains(family))
+                    return family;
+            }
+
+            string segment = LastSegment(appId);
+            return string.IsNullOrEmpty(segment) ? "gzdoom" : segment.ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Runs an install command to completion. Both pipes are drained concurrently, so the
+        /// progress output of <c>flatpak install</c> cannot fill a buffer and hang the install.
+        /// </summary>
+        public static HostProcessResult RunInstall(SourcePortInstallHint hint, int timeoutMs = 15 * 60 * 1000)
         {
             if (hint == null || string.IsNullOrWhiteSpace(hint.Command))
-                return null;
-            var start = new ProcessStartInfo
-            {
-                FileName = "/bin/bash",
-                Arguments = "-lc " + QuoteForBash(hint.Command),
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            return Process.Start(SandboxHost.WrapForHost(start));
+                return new HostProcessResult();
+            return HostProcess.Run("/bin/bash", "-lc " + QuoteForBash(hint.Command), timeoutMs);
         }
 
         private static string QuoteForBash(string command)
@@ -210,32 +363,20 @@ namespace DoomLauncher
 
         public static string TryReadProcess(string fileName, string arguments)
         {
-            if (SourcePortLaunch.FindOnPath(fileName) == null)
-                return string.Empty;
-            try
+            // Inside our own Flatpak these tools live on the host, not on the sandbox PATH.
+            // Requiring a sandbox-local hit is what made every host Flatpak invisible.
+            string resolved = SourcePortLaunch.FindOnPath(fileName);
+            if (resolved == null)
             {
-                var start = SandboxHost.WrapForHost(new ProcessStartInfo
-                {
-                    FileName = fileName,
-                    Arguments = arguments,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                });
-                using (var proc = Process.Start(start))
-                {
-                    if (proc == null)
-                        return string.Empty;
-                    string output = proc.StandardOutput.ReadToEnd();
-                    proc.WaitForExit(5000);
-                    return output ?? string.Empty;
-                }
+                if (!SandboxHost.IsFlatpak || !SandboxHost.CanRunHostCommands)
+                    return string.Empty;
+
+                // flatpak-spawn hands the command the sandbox PATH, so fall back to the bare name
+                // only when we could not resolve it; an absolute path is always preferred.
+                resolved = fileName;
             }
-            catch
-            {
-                return string.Empty;
-            }
+
+            return HostProcess.RunForOutput(resolved, arguments, 8000);
         }
 
         private static IEnumerable<string> SplitLines(string text)

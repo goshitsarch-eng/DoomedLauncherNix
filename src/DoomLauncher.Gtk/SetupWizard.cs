@@ -3,7 +3,7 @@ using DoomLauncher.Handlers.Sync;
 using DoomLauncher.Interfaces;
 using DoomLauncher.SourcePort;
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,6 +46,7 @@ namespace DoomLauncher.Linux
         private Gtk.ProgressBar m_progress;
         private readonly string[] m_pages = { "welcome", "ports", "iwads", "mods", "done" };
         private int m_index;
+        private bool m_detecting;
 
         public SetupWizardUi(SetupWizardCallbacks host)
         {
@@ -158,7 +159,7 @@ namespace DoomLauncher.Linux
             m_installLog.AddCssClass("dim-label");
             box.Append(m_installLog);
 
-            var detect = GtkUtil.Button("Detect again", RefreshPorts);
+            var detect = GtkUtil.Button("Detect again", () => RefreshPorts(true));
             var install = GtkUtil.Button("Install GZDoom (Flatpak)", InstallGzdoom);
             var add = GtkUtil.Button("Add a port manually...", () =>
                 SourcePortEditDialog.Show(m_window, SourcePortLaunchType.SourcePort, null, RefreshPorts));
@@ -244,15 +245,64 @@ namespace DoomLauncher.Linux
 
         private void RefreshPorts()
         {
-            var adapter = DataCache.Instance.DataSourceAdapter;
-            var added = SourcePortSetup.EnsureDetectedPorts(adapter);
-            var ports = adapter.GetSourcePorts().ToList();
+            RefreshPorts(false);
+        }
+
+        /// <summary>
+        /// Detection and the per-port "is it still installed" checks both spawn processes, so both
+        /// run off the UI thread. Only the database reads and the widget updates happen here.
+        /// </summary>
+        private void RefreshPorts(bool refresh)
+        {
+            if (m_detecting)
+                return;
+            m_detecting = true;
+            m_portStatus.SetLabel("Looking for installed source ports...");
+
+            GtkUtil.EnsureDetectedPortsAsync(added =>
+            {
+                List<ISourcePortData> ports;
+                try
+                {
+                    ports = DataCache.Instance.DataSourceAdapter.GetSourcePorts().ToList();
+                }
+                catch
+                {
+                    m_detecting = false;
+                    return;
+                }
+
+                GtkUtil.RunBackground(() =>
+                {
+                    var runnable = new Dictionary<int, bool>();
+                    foreach (var port in ports)
+                    {
+                        try
+                        {
+                            runnable[port.SourcePortID] = SourcePortLaunch.CanExecute(port);
+                        }
+                        catch
+                        {
+                            runnable[port.SourcePortID] = false;
+                        }
+                    }
+                    GtkUtil.RunOnUi(() =>
+                    {
+                        m_detecting = false;
+                        RenderPorts(ports, runnable, added.Count);
+                    });
+                });
+            }, refresh);
+        }
+
+        private void RenderPorts(List<ISourcePortData> ports, Dictionary<int, bool> runnable, int addedCount)
+        {
             GtkUtil.ClearList(m_portList);
             foreach (var port in ports)
             {
                 var row = Gtk.ListBoxRow.New();
                 string extra = SourcePortLaunch.IsManaged(port.Executable) ? "  ·  sandboxed (Flatpak/snap)" : string.Empty;
-                var ok = SourcePortLaunch.CanExecute(port);
+                bool ok = !runnable.TryGetValue(port.SourcePortID, out bool value) || value;
                 row.SetChild(Gtk.Label.New($"{port.Name}  ({port.Executable}){(ok ? extra : "  ·  missing")}"));
                 m_portList.Append(row);
             }
@@ -266,10 +316,10 @@ namespace DoomLauncher.Linux
             {
                 var gz = ports.FirstOrDefault(p => SourcePortLaunch.IsZDoomFamily(p.Executable));
                 m_portStatus.SetLabel(gz != null
-                    ? $"Using {gz.Name} as your GZDoom-family port{(added.Count > 0 ? $". Added {added.Count} detected port(s)." : ".")}"
+                    ? $"Using {gz.Name} as your GZDoom-family port{(addedCount > 0 ? $". Added {addedCount} detected port(s)." : ".")}"
                     : $"{ports.Count} port(s) configured. Add GZDoom if you want the usual mod setup.");
             }
-            if (added.Count > 0)
+            if (addedCount > 0)
                 m_host.Reload?.Invoke();
         }
 
@@ -294,28 +344,22 @@ namespace DoomLauncher.Linux
 
             Task.Run(() =>
             {
-                try
+                // flatpak install streams progress to stderr. Reading stdout to the end first
+                // could fill the stderr pipe and hang the install, so drain both together.
+                var result = SourcePortDetector.RunInstall(hint);
+                string output = result.StandardOutput + result.StandardError;
+                GtkUtil.RunOnUi(() =>
                 {
-                    using var proc = SourcePortDetector.StartInstall(hint);
-                    if (proc == null)
-                    {
-                        GtkUtil.RunOnUi(() => m_installLog.SetLabel("Could not start the Flatpak installer."));
-                        return;
-                    }
-                    string output = proc.StandardOutput.ReadToEnd() + proc.StandardError.ReadToEnd();
-                    proc.WaitForExit();
-                    GtkUtil.RunOnUi(() =>
-                    {
-                        m_installLog.SetLabel(proc.ExitCode == 0
-                            ? "GZDoom Flatpak installed. Detecting..."
-                            : "Install did not finish. Output:\n" + TrimLog(output) + "\nYou can run:\n" + hint.Command);
-                        RefreshPorts();
-                    });
-                }
-                catch (Exception ex)
-                {
-                    GtkUtil.RunOnUi(() => m_installLog.SetLabel("Install failed: " + ex.Message + "\n" + hint.Command));
-                }
+                    if (!result.Started)
+                        m_installLog.SetLabel("Could not start the Flatpak installer.\nYou can run:\n" + hint.Command);
+                    else if (result.TimedOut)
+                        m_installLog.SetLabel("The install is taking too long and was stopped. You can run:\n" + hint.Command);
+                    else if (result.Succeeded)
+                        m_installLog.SetLabel("GZDoom Flatpak installed. Detecting...");
+                    else
+                        m_installLog.SetLabel("Install did not finish. Output:\n" + TrimLog(output) + "\nYou can run:\n" + hint.Command);
+                    RefreshPorts(true);
+                });
             });
         }
 
