@@ -26,6 +26,16 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="3.7.9.3" date="2026-08-24">
+      <description>
+        <p>Source port detection fixes:</p>
+        <ul>
+          <li>Flatpak source ports are detected again, including ports published outside org.zdoom.*</li>
+          <li>UZDoom is found as a distro package, an AppImage, or a Flatpak</li>
+          <li>Detection runs in the background and can no longer freeze the window</li>
+        </ul>
+      </description>
+    </release>
     <release version="3.7.9.2" date="2026-08-23"/>
   </releases>
   <provides>
