@@ -4,7 +4,7 @@
   <name>Doom Launcher</name>
   <summary>Doom frontend and WAD library for Linux</summary>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>GPL-3.0-or-later</project_license>
+  <project_license>GPL-3.0-only</project_license>
   <developer id="com.goshapps">
     <name>Gosh Apps</name>
   </developer>

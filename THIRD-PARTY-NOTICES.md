@@ -2,12 +2,12 @@
 
 Doom Launcher makes use of third-party assets — these may include libraries, images, icons, fonts, and more. The licenses for these assets are reproduced or linked below, alongside any other information deemed to be relevant to the asset. If we have failed to include a license for a third-party asset, please make us aware so that we can add it to this document.
 
-This file covers both the original Windows application and the Linux/GTK stack added by this fork. Doom Launcher itself is licensed GPL-3.0-or-later; see [LICENSE](LICENSE).
+This file covers both the original Windows application and the Linux/GTK stack added by this fork. Doom Launcher itself is licensed GPL-3.0-only; see [LICENSE](LICENSE).
 
 ## The original project
 
 **Doom Launcher** by [Hobomaster22](https://github.com/nstlaurent) and the upstream contributors —
-<https://github.com/nstlaurent/DoomLauncher> — GPL-3.0-or-later.
+<https://github.com/nstlaurent/DoomLauncher> — GPL-3.0-only.
 
 This repository is a fork of that project. All of the launcher's original design,
 database, syncing, and Windows UI work is theirs.
@@ -75,16 +75,25 @@ not a plain Apache licence. Read the terms at
 | Component | Author | License | Project |
 |---|---|---|---|
 | System.Data.SQLite | SQLite Development Team | Public domain (<https://www.sqlite.org/copyright.html>) | <https://system.data.sqlite.org/> |
-| Squid-Box.SevenZipSharp | Squid-Box, after Markovtsev Vadim's SevenZipSharp | LGPL-3.0-only | <https://github.com/squid-box/SevenZipSharp> |
+| SevenZipSharp 0.64 | Markovtsev Vadim (`markhor`) | GNU LGPL; the exact legacy package does not encode a version. Its preserved source includes an LGPL-2.1 text, while file-level grants say LGPL-3.0-or-later. Both texts are retained below rather than collapsing that evidence into an invented package SPDX value. | archived CodePlex package, preserved at <https://github.com/tomap/SevenZipSharp> |
+| SevenZipSharp.Interop 19.0.2 | Luuk Sommers and 7-Zip contributors | MIT for the package plus 7-Zip's LGPL-2.1-or-later, BSD-3-Clause, and unRAR restriction notices | <https://github.com/luuksommers/SevenZipSharp.Interop> |
+| Squid-Box.SevenZipSharp 1.5.0.366 | Squid-Box, after Markovtsev Vadim's SevenZipSharp | LGPL-3.0-only | <https://github.com/squid-box/SevenZipSharp> |
 | SharpCompress | Adam Hathcock | MIT | <https://github.com/adamhathcock/sharpcompress> |
 | Gameloop.Vdf | Shravan Rajinikanth | MIT | <https://github.com/shravan2x/Gameloop.Vdf> |
 | Newtonsoft.Json | James Newton-King | MIT | <https://www.newtonsoft.com/json> |
 | Octokit | GitHub | MIT | <https://github.com/octokit/octokit.net> |
 | EntityFramework | Microsoft | Apache-2.0 | <https://github.com/dotnet/ef6> |
 
-Licences in these two tables are the SPDX expressions published with each package
-on nuget.org, checked against the versions pinned in `DoomLauncher/packages.config`
-and the `.csproj` files in `src/`.
+The Windows project currently references all three distinct SevenZip packages above.
+`SevenZipSharp` 0.64 and `SevenZipSharp.Interop` 19.0.2 must not be attributed
+only to the newer Squid-Box fork. The exact package metadata and complete
+redistribution texts retained for this repository are:
+
+* [`third-party-licenses/SevenZipSharp-0.64-LGPL-2.1.txt`](third-party-licenses/SevenZipSharp-0.64-LGPL-2.1.txt) — SHA-256 `a4436606db0ecb65862523b72a09921b74a96f37d3ab9084cd6535834e9964af`, copied from the preserved source distribution's `license` file.
+* [`third-party-licenses/LGPL-3.0.txt`](third-party-licenses/LGPL-3.0.txt) — SHA-256 `996af0513df21f7496288951c41428a03c174e9e4a9d63665c57d670f845ccb1`, retained because SevenZipSharp source-file headers grant “either version 3 of the License, or (at your option) any later version.” The LGPL v3 supplement is distributed together with this repository's [`LICENSE`](LICENSE), which contains the complete incorporated GPL v3 terms.
+* [`third-party-licenses/SevenZipSharp.Interop-19.0.2-NOTICE.txt`](third-party-licenses/SevenZipSharp.Interop-19.0.2-NOTICE.txt) — SHA-256 `f89b1f6d5e98afb869aa0290f2e4357aff26d947e5c387b17ebd07910b8ae14a`; this is the package's MIT notice plus the 7-Zip 19.00 binary redistribution notice, including LGPL, BSD, and unRAR terms.
+
+The Linux package table uses the SPDX expressions published by the exact NuGet packages. The Windows table follows the exact legacy package metadata in `DoomLauncher/packages.config`; where an old package exposes only a license URL, the preserved source or package redistribution notice is named explicitly above rather than inventing a newer package's SPDX identity.
 
 ---
 
