@@ -1153,14 +1153,23 @@ namespace DoomLauncher.Linux
         {
             var adapter = DataCache.Instance.DataSourceAdapter;
             bool needsWizard = !adapter.GetSourcePorts().Any() || !adapter.GetIWads().Any();
-            SourcePortSetup.EnsureDetectedPorts(adapter);
-            SourcePortSetup.EnsureDefaultSourcePort(adapter);
 
             if (needsWizard)
             {
                 if (!adapter.GetIWads().Any())
                     LoadStores();
-                OpenSetupWizard();
+                OpenSetupWizard();   // The assistant runs its own detection pass.
+            }
+            else
+            {
+                // Detection shells out to flatpak/snap and, inside our own Flatpak, to the host.
+                // Doing that here on the UI thread froze the window on startup.
+                GtkUtil.EnsureDetectedPortsAsync(added =>
+                {
+                    SourcePortSetup.EnsureDefaultSourcePort(adapter);
+                    if (added.Count > 0)
+                        ReloadCurrentTab();
+                });
             }
 
             if (m_ops.GetSyncNeeded().Any())

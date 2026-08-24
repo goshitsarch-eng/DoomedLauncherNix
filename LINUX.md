@@ -53,7 +53,7 @@ On first launch (no source ports or no IWADs), the **Setup assistant** walks thr
 
 The assistant:
 
-1. Detects GZDoom and other ports on `PATH`, in `/usr/bin`, as a Flatpak (`org.zdoom.GZDoom`), or as a snap.
+1. Detects GZDoom, UZDoom, VKDoom, and other ports on `PATH`, in `/usr/bin`, `/usr/local/bin`, `/usr/games`, `/usr/local/games`, `~/.local/bin`, and `~/bin`; as an AppImage under `~/Applications`, `~/AppImages`, `~/bin`, `~/.local/bin`, or `~/Downloads`; as a Flatpak; or as a snap. Binary names are matched case-insensitively, so a build that ships `UZDoom` is found by a `uzdoom` lookup and is then recorded (and launched) under the name it actually has on disk. Detection runs in the background, so the window stays responsive while it looks.
 2. Can run `flatpak install --user flathub org.zdoom.GZDoom` when Flatpak is available.
 3. Imports IWADs from Steam/GOG/Heroic/Lutris, a file picker, or a Freedoom download.
 4. Downloads featured mods from **idgames, GitHub, Romero Games**, and other community sites, or opens ModDB/Codeberg pages when a direct zip is not allowed. **Download and play** still works.
@@ -78,7 +78,9 @@ Community site bookmarks include Cacowards, Realm667, DSDA, ZDoom forums, and Do
 |---|---|---|
 | Distro package / binary on `PATH` | `gzdoom` | `/usr/bin` or empty |
 | Absolute binary | `gzdoom` | folder that contains it |
+| AppImage | `UZDoom-4.14.0-x86_64.AppImage` | folder that contains it |
 | Flathub GZDoom | `flatpak:org.zdoom.GZDoom` | empty |
+| Any other port Flatpak | `flatpak:<app id>` | empty |
 | Snap | `snap:gzdoom` | empty |
 
 Flatpak launches as:
@@ -91,9 +93,20 @@ flatpak run --filesystem=host --filesystem=home org.zdoom.GZDoom -- <IWAD and -f
 
 When **this launcher** is itself a Flatpak, the same GZDoom command is prefixed with `flatpak-spawn --host --` so host Flatpak/snap/PATH binaries stay reachable, and host GZDoom can still see files under `~/.var/app/com.goshapps.DoomLauncher/`.
 
-**Source Ports…** has **Detect GZDoom / ports…**. The edit dialog can fill the fields from whatever was detected.
+**Source Ports…** has **Detect GZDoom / ports…**. The edit dialog can fill the fields from whatever was detected. Both re-scan from scratch rather than reusing an earlier answer, so a port installed while the launcher is open is picked up.
 
-GZDoom-family ports (`gzdoom`, `uzdoom`, `vkdoom`, Flatpak app IDs under `org.zdoom`) use ZDoom save/stat handling, including `~/.config/gzdoom` and `~/.var/app/org.zdoom.GZDoom/config/gzdoom`.
+GZDoom-family ports (`gzdoom`, `uzdoom`, `vkdoom`, `lzdoom`, `zandronum`, and Flatpak app IDs containing those names) use ZDoom save/stat handling. Save and statistics lookup covers `~/.config/<port>` and `~/.var/app/*/config/<port>` for every installed Flatpak, not just `org.zdoom.*`, so a UZDoom Flatpak published under another app ID still reports its saves and stats.
+
+### Which Flatpaks count as a source port
+
+Detection does not require a `org.zdoom.*` app ID. An installed Flatpak is offered as a source port when its ID matches a known port binary (`org.zdoom.GZDoom`, `io.github.fabiangreffrath.Woof`, `io.github.kraflab.dsda-doom`, …), when its last segment ends in `doom`, or when the ID mentions `zdoom`, `zandronum`, or `doomsday`. Doom Launcher never offers itself.
+
+Installed Flatpaks are found two ways, and both are used:
+
+* `flatpak list --app --columns=application`, run on the host through `flatpak-spawn` when the launcher is itself a Flatpak
+* a direct read of `~/.local/share/flatpak/app` and `/var/lib/flatpak/app`, which still works when the `flatpak` CLI is not reachable at all
+
+Helper commands (`flatpak`, `snap`, and binary lookups) run with a hard timeout and both pipes drained, and a host call that times out short-circuits the rest of that pass, so a Flatpak portal that stops answering cannot hang the launcher.
 
 ## Running as a Flatpak
 
@@ -107,7 +120,8 @@ flatpak run com.goshapps.DoomLauncher
 Inside that sandbox the launcher:
 
 * Stores the database under XDG, not next to the `/app` binary
-* Detects host `gzdoom` / `flatpak` / `snap` through `flatpak-spawn --host`
+* Detects host `gzdoom` / `flatpak` / `snap` through `flatpak-spawn --host`, resolving every candidate binary in a single host round trip rather than one process per name
+* Launches host binaries by absolute path, so a port in `/usr/local/games` or `~/.local/bin` works even though the sandbox cannot see it
 * Opens HTTP(S) pages through the desktop portal
 * Does not overwrite the Flatpak-provided `.desktop` file
 
