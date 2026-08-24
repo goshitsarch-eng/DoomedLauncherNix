@@ -7,7 +7,7 @@ _A Linux-focused fork of https://github.com/nstlaurent/DoomLauncher[Doom Launche
 ====
 *This repository is a fork.* It is not the official Doom Launcher project.
 
-* *Original project:* https://github.com/nstlaurent/DoomLauncher[nstlaurent/DoomLauncher] — created and maintained by Hobomaster22 (https://github.com/nstlaurent[@nstlaurent]), licensed https://www.gnu.org/licenses/gpl-3.0.html[GPL-3.0-or-later].
+* *Original project:* https://github.com/nstlaurent/DoomLauncher[nstlaurent/DoomLauncher] — created and maintained by Hobomaster22 (https://github.com/nstlaurent[@nstlaurent]), licensed https://www.gnu.org/licenses/gpl-3.0.html[GPL-3.0-only].
 * *This fork:* https://github.com/goshitsarch-eng/DoomedLauncherNix[goshitsarch-eng/DoomedLauncherNix], maintained by Gosh Apps.
 * *Forked at:* upstream commit `473441a` (18 June 2026).
 * *Why:* to add a native Linux frontend (GTK 4 + libadwaita) and a Flatpak build. See <<what-this-fork-adds>>.
@@ -42,7 +42,7 @@ Large tile view for a custom tag named "Playing". Doom Launcher can play custom 
 These come from the original Doom Launcher and work on both platforms unless noted.
 
 * Direct download and metadata update from /idgames (through API).
-* Featured auto-downloads from GitHub (Beautiful Doom, Project Brutality, Freedoom) and official Romero SIGIL zips; ModDB and other hubs as open-in-browser links.
+* *(Linux fork only)* Featured auto-downloads from GitHub (Beautiful Doom, Project Brutality, Freedoom) and official Romero SIGIL zips; ModDB and other hubs as open-in-browser links.
 * Add ZIP archives containing WAD/PK3/DEH/TXT files.
 * Automatic scraping of title, author, release date and description
 from included text files.
@@ -214,7 +214,7 @@ id Software or ZeniMax.
 
 == License
 
-Doom Launcher is licensed under the *GNU General Public License v3.0 or later*.
+Doom Launcher is licensed under the *GNU General Public License v3.0 only*.
 The full text is in link:LICENSE[LICENSE], and it applies to this fork as it does
 to the original.
 

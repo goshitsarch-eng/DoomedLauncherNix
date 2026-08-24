@@ -137,7 +137,7 @@ Inside that sandbox the launcher:
 
 The Linux port would not exist without the projects it builds on:
 
-* **[Doom Launcher](https://github.com/nstlaurent/DoomLauncher)** by [Hobomaster22](https://github.com/nstlaurent) — the launcher this forks, GPL-3.0-or-later.
+* **[Doom Launcher](https://github.com/nstlaurent/DoomLauncher)** by [Hobomaster22](https://github.com/nstlaurent) — the launcher this forks, GPL-3.0-only.
 * **[GTK](https://www.gtk.org/)** and **[libadwaita](https://gitlab.gnome.org/GNOME/libadwaita)** — the toolkit and platform library.
 * **[gir.core](https://github.com/gircore/gir.core)** by Marcel Tiede — the C# bindings that make GTK 4 usable from .NET.
 * **[SharpCompress](https://github.com/adamhathcock/sharpcompress)**, **[ImageSharp](https://github.com/SixLabors/ImageSharp)**, **[Microsoft.Data.Sqlite](https://learn.microsoft.com/dotnet/standard/data/sqlite/)** — the cross-platform replacements for the Windows-only pieces.
