@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.goshapps.DoomLauncher</id>
+  <name>Doom Launcher</name>
+  <summary>Doom frontend and WAD library for Linux</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <developer id="com.goshapps">
+    <name>Gosh Apps</name>
+  </developer>
+  <description>
+    <p>
+      Doom Launcher is a library for Doom engine games and mods, built with
+      Qt 6 and KDE's Kirigami framework so it looks and feels like a modern
+      KDE application, with light and dark color schemes. It detects GZDoom,
+      UZDoom and other source ports as native binaries, AppImages, Flatpaks
+      or snaps, imports IWADs and mods, tracks play time, and downloads mods
+      from the idgames archive.
+    </p>
+    <p>
+      This is DoomedLauncherNix, a Linux-focused fork of Doom Launcher by
+      Hobomaster22 (nstlaurent). The launcher concept, database layout and
+      the Windows version are their work, shared under the GPL; this build
+      is a native Qt 6/Kirigami rewrite. Please support the original project.
+    </p>
+    <p>
+      Doom Launcher is an independent tool. It is not affiliated with or endorsed by
+      id Software, and it ships no game data — you supply your own IWAD, or use a
+      free one such as Freedoom.
+    </p>
+  </description>
+  <launchable type="desktop-id">com.goshapps.DoomLauncher.desktop</launchable>
+  <url type="homepage">https://github.com/goshitsarch-eng/DoomedLauncherNix</url>
+  <url type="bugtracker">https://github.com/goshitsarch-eng/DoomedLauncherNix/issues</url>
+  <url type="vcs-browser">https://github.com/goshitsarch-eng/DoomedLauncherNix</url>
+  <!-- The upstream project this is forked from. -->
+  <url type="help">https://github.com/nstlaurent/DoomLauncher</url>
+  <releases>
+    <release version="4.0.0" date="2026-08-28">
+      <description>
+        <p>Complete rewrite as a native Qt 6 / Kirigami application:</p>
+        <ul>
+          <li>Modern KDE look and feel with light, dark and follow-system color schemes</li>
+          <li>The GTK 4 / libadwaita and .NET stack is gone entirely</li>
+          <li>Existing libraries keep working — the same database and file layout is used</li>
+          <li>KDE file dialogs open files on network shares directly</li>
+        </ul>
+      </description>
+    </release>
+    <release version="3.7.9.3" date="2026-08-24"/>
+  </releases>
+  <provides>
+    <binary>doomedlauncher</binary>
+  </provides>
+  <content_rating type="oars-1.1"/>
+</component>
