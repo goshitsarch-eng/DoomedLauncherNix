@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Doom Launcher
+Comment=Doom frontend and WAD library
+Exec=doomedlauncher %F
+Icon=com.goshapps.DoomLauncher
+Terminal=false
+Categories=Qt;KDE;Game;
+MimeType=application/x-doom;application/x-wad;
+StartupNotify=true
+StartupWMClass=doomedlauncher

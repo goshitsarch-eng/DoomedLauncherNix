@@ -1,11 +1,9 @@
 id: com.goshapps.DoomLauncher
-runtime: org.gnome.Platform
-runtime-version: '49'
-sdk: org.gnome.Sdk
-sdk-extensions:
-  - org.freedesktop.Sdk.Extension.dotnet8
+runtime: org.kde.Platform
+runtime-version: '6.9'
+sdk: org.kde.Sdk
 branch: stable
-command: DoomLauncher
+command: doomedlauncher
 finish-args:
   - --share=ipc
   - --share=network
@@ -13,27 +11,15 @@ finish-args:
   - --socket=fallback-x11
   - --device=dri
   - --filesystem=home
+  # Launch host source ports (native binaries, Flatpak and snap wrappers).
   - --talk-name=org.freedesktop.Flatpak
-  - --env=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 modules:
-  - name: doomlauncher
-    buildsystem: simple
-    build-options:
-      prepend-path: /usr/lib/sdk/dotnet8/bin
-      prepend-ld-library-path: /usr/lib/sdk/dotnet8/lib
-      env:
-        DOTNET_CLI_TELEMETRY_OPTOUT: '1'
-        DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
-        DOTNET_NOLOGO: '1'
+  - name: doomedlauncher
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
     sources:
       - type: dir
         path: ..
-      - nuget-sources.json
-    build-commands:
-      - dotnet publish src/DoomLauncher.Gtk/DoomLauncher.Gtk.csproj -c Release -r linux-x64 --self-contained true -o ${FLATPAK_DEST}/lib/doomlauncher --source nuget-sources
-      - install -Dm755 flatpak/DoomLauncher.in ${FLATPAK_DEST}/bin/DoomLauncher
-      - install -Dm644 src/DoomLauncher.Gtk/com.goshapps.DoomLauncher.desktop ${FLATPAK_DEST}/share/applications/com.goshapps.DoomLauncher.desktop
-      - install -Dm644 flatpak/com.goshapps.DoomLauncher.metainfo.xml ${FLATPAK_DEST}/share/metainfo/com.goshapps.DoomLauncher.metainfo.xml
-      - install -Dm644 flatpak/com.goshapps.DoomLauncher.png ${FLATPAK_DEST}/share/icons/hicolor/256x256/apps/com.goshapps.DoomLauncher.png
+    post-install:
       - install -Dm644 LICENSE ${FLATPAK_DEST}/share/licenses/com.goshapps.DoomLauncher/LICENSE
-      - install -Dm644 THIRD-PARTY-NOTICES.md ${FLATPAK_DEST}/share/licenses/com.goshapps.DoomLauncher/THIRD-PARTY-NOTICES.md

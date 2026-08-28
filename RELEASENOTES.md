@@ -6,6 +6,36 @@ added by this fork; upstream's own release notes follow further down, unchanged.
 
 Fork versions are numbered separately from upstream releases.
 
+## 4.0.0
+
+### Complete rewrite in Qt 6 / Kirigami
+
+- The application is now a native C++ Qt 6 application using KDE's Kirigami
+  framework, styled like a modern KDE app. The GTK 4 / libadwaita frontend
+  and the entire .NET stack are gone.
+- Light and dark mode: follows the system color scheme by default, or force
+  Breeze Light / Breeze Dark from Settings.
+- Existing libraries keep working: the same SQLite database and
+  `GameFiles/` layout under `$XDG_DATA_HOME/doomlauncher` is used, so
+  entries, tags, source ports and play history carry over.
+- File dialogs go through the KDE/XDG portal, so network share locations
+  mounted via KIO open directly instead of asking for another app.
+- Library (list/tile views, search, sort, tags-as-tabs), play dialog with
+  live command preview, source port detection (native/AppImage/Flatpak/
+  snap), idgames search + download, play time tracking, setup assistant.
+- Flatpak packaging moved to the org.kde.Platform runtime.
+- Title screens (TITLEPIC/TITLE, including MAPINFO titlepage overrides and
+  embedded PNGs) are extracted as library art, using the wad's own PLAYPAL
+  or the built-in Doom/Heretic/Hexen palettes.
+- Per-level statistics are recorded again: levelstat (dsda-doom, PrBoom+,
+  Crispy, Woof! and friends), statdump (Chocolate Doom family) and
+  ZDoom-family save games, stored in the same Stats table and shown in the
+  details panel.
+- The Steam/GOG/Heroic/Lutris scan is back: installed id classics are
+  found via libraryfolders.vdf/appmanifests or the usual install folders,
+  IWADs and expansion WADs are imported, and the Doom 64 re-release binary
+  is registered as a Doom 64 source port.
+
 ## 3.7.9.3
 
 ### Bug Fixes:
