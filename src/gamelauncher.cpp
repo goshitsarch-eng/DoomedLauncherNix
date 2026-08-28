@@ -4,8 +4,10 @@
 #include "database.h"
 #include "launcherpaths.h"
 #include "sourceportdetector.h"
+#include "statsreader.h"
 
 #include <QDir>
+#include <QDirIterator>
 #include <QElapsedTimer>
 #include <QFileInfo>
 #include <QRegularExpression>
@@ -303,7 +305,135 @@ GameLauncher::BuiltCommand GameLauncher::build(const LaunchRequest &request)
     if (!request.extraParams.trimmed().isEmpty())
         command.arguments << QProcess::splitCommand(request.extraParams.trimmed());
 
+    if (request.saveStatistics)
+        prepareStatistics(command, sourcePort);
+
     return command;
+}
+
+void GameLauncher::prepareStatistics(BuiltCommand &command, const QVariantMap &sourcePort)
+{
+    const QString executable = sourcePort.value(QStringLiteral("Executable")).toString();
+    const StatsReader::Kind kind = StatsReader::kindForExecutable(executable);
+    command.statSession.kind = int(kind);
+    command.statSession.launchTime = QDateTime::currentDateTime();
+
+    switch (kind) {
+    case StatsReader::Kind::Levelstat:
+        // The port writes levelstat.txt into its working directory.
+        command.statSession.statFile =
+            command.workingDirectory + QStringLiteral("/levelstat.txt");
+        command.arguments << QStringLiteral("-levelstat");
+        break;
+    case StatsReader::Kind::Statdump:
+        command.statSession.statFile =
+            LauncherPaths::tempDir() + QStringLiteral("/statdump.txt");
+        command.arguments << QStringLiteral("-statdump") << command.statSession.statFile;
+        break;
+    case StatsReader::Kind::ZDoomSave: {
+        // Stats live inside save files; watch every place saves can land.
+        QStringList dirs;
+        const QString altSaveDir = sourcePort.value(QStringLiteral("AltSaveDirectory")).toString();
+        if (!altSaveDir.isEmpty())
+            dirs << LauncherPaths::resolve(altSaveDir);
+        dirs << LauncherPaths::saveGamesDir();
+        const QString configHome = qEnvironmentVariable("XDG_CONFIG_HOME",
+                                                        QDir::homePath() + QStringLiteral("/.config"));
+        for (const char *family : {"gzdoom", "uzdoom", "vkdoom", "lzdoom", "zandronum"})
+            dirs << configHome + QLatin1Char('/') + QLatin1String(family);
+        for (const char *app : {"org.zdoom.GZDoom", "org.zdoom.UZDoom", "org.zdoom.VKDoom"}) {
+            dirs << QDir::homePath() + QStringLiteral("/.var/app/") + QLatin1String(app)
+                        + QStringLiteral("/.config");
+            dirs << QDir::homePath() + QStringLiteral("/.var/app/") + QLatin1String(app)
+                        + QStringLiteral("/config");
+        }
+        command.statSession.watchDirs = dirs;
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+void GameLauncher::collectStatistics(const StatSession &session, int gameFileId, int sourcePortId)
+{
+    const auto kind = StatsReader::Kind(session.kind);
+    QList<StatsReader::Stats> parsed;
+
+    switch (kind) {
+    case StatsReader::Kind::Levelstat:
+    case StatsReader::Kind::Statdump: {
+        QFile file(session.statFile);
+        if (!file.open(QIODevice::ReadOnly))
+            return;
+        const QString text = QString::fromUtf8(file.readAll());
+        parsed = kind == StatsReader::Kind::Levelstat ? StatsReader::parseLevelstat(text)
+                                                      : StatsReader::parseStatdump(text);
+        break;
+    }
+    case StatsReader::Kind::ZDoomSave: {
+        // Saves written (or rewritten) during this session carry the stats.
+        const QDateTime cutoff = session.launchTime.addSecs(-2);
+        for (const QString &dir : session.watchDirs) {
+            if (!QDir(dir).exists())
+                continue;
+            QDirIterator it(dir, {QStringLiteral("*.zds")}, QDir::Files,
+                            QDirIterator::Subdirectories);
+            while (it.hasNext()) {
+                it.next();
+                if (it.fileInfo().lastModified() >= cutoff)
+                    parsed += StatsReader::parseZDoomSave(it.filePath());
+            }
+        }
+        break;
+    }
+    default:
+        return;
+    }
+
+    if (parsed.isEmpty())
+        return;
+
+    const QVariantList existingRows = m_db->stats(gameFileId);
+    auto alreadyRecorded = [&existingRows](const StatsReader::Stats &stats) {
+        for (const QVariant &rowVariant : existingRows) {
+            const QVariantMap row = rowVariant.toMap();
+            if (row.value(QStringLiteral("MapName")).toString()
+                        .compare(stats.mapName, Qt::CaseInsensitive) == 0
+                && row.value(QStringLiteral("KillCount")).toInt() == stats.killCount
+                && row.value(QStringLiteral("TotalKills")).toInt() == stats.totalKills
+                && row.value(QStringLiteral("SecretCount")).toInt() == stats.secretCount
+                && row.value(QStringLiteral("TotalSecrets")).toInt() == stats.totalSecrets
+                && row.value(QStringLiteral("ItemCount")).toInt() == stats.itemCount
+                && row.value(QStringLiteral("TotalItems")).toInt() == stats.totalItems
+                && qAbs(row.value(QStringLiteral("LevelTime")).toDouble() - stats.levelTime) < 0.01)
+                return true;
+        }
+        return false;
+    };
+
+    int added = 0;
+    for (const StatsReader::Stats &stats : parsed) {
+        if (stats.mapName.isEmpty() || alreadyRecorded(stats))
+            continue;
+        QVariantMap fields;
+        fields.insert(QStringLiteral("GameFileID"), gameFileId);
+        fields.insert(QStringLiteral("KillCount"), stats.killCount);
+        fields.insert(QStringLiteral("TotalKills"), stats.totalKills);
+        fields.insert(QStringLiteral("SecretCount"), stats.secretCount);
+        fields.insert(QStringLiteral("TotalSecrets"), stats.totalSecrets);
+        fields.insert(QStringLiteral("ItemCount"), stats.itemCount);
+        fields.insert(QStringLiteral("TotalItems"), stats.totalItems);
+        fields.insert(QStringLiteral("LevelTime"), stats.levelTime);
+        fields.insert(QStringLiteral("MapName"), stats.mapName);
+        fields.insert(QStringLiteral("SourcePortID"), sourcePortId);
+        fields.insert(QStringLiteral("Skill"),
+                      stats.skill > 0 ? QVariant(stats.skill) : QVariant());
+        m_db->insertStats(fields);
+        ++added;
+    }
+    if (added > 0)
+        Q_EMIT statisticsRecorded(gameFileId, added);
 }
 
 QString GameLauncher::formatCommand(const LaunchRequest &request)
@@ -330,16 +460,24 @@ QString GameLauncher::launch(const LaunchRequest &request)
     process->setWorkingDirectory(command.workingDirectory);
     process->setProcessChannelMode(QProcess::ForwardedChannels);
 
+    // A leftover stat file from an earlier session must not be re-read.
+    if (!command.statSession.statFile.isEmpty())
+        QFile::remove(command.statSession.statFile);
+
     auto *timer = new QElapsedTimer();
     timer->start();
     const int gameFileId = request.gameFileId;
+    const int sourcePortId = request.sourcePortId;
+    const StatSession statSession = command.statSession;
 
     connect(process, &QProcess::finished, this,
-            [this, process, timer, gameFileId](int, QProcess::ExitStatus) {
+            [this, process, timer, gameFileId, sourcePortId, statSession](int, QProcess::ExitStatus) {
                 const int minutes = int(timer->elapsed() / 60000);
                 delete timer;
                 process->deleteLater();
                 --m_activeSessions;
+
+                collectStatistics(statSession, gameFileId, sourcePortId);
 
                 const QVariantMap gameFile = m_db->gameFileById(gameFileId);
                 QVariantMap update;
@@ -375,6 +513,7 @@ QString GameLauncher::launch(const LaunchRequest &request)
         update.insert(QStringLiteral("SettingsExtraParams"), request.extraParams);
         update.insert(QStringLiteral("SettingsExtraParamsOnly"), request.extraParamsOnly ? 1 : 0);
         update.insert(QStringLiteral("SettingsLoadLatestSave"), request.loadLatestSave ? 1 : 0);
+        update.insert(QStringLiteral("SettingsStat"), request.saveStatistics ? 1 : 0);
         update.insert(QStringLiteral("SettingsFiles"), request.additionalFiles.join(QLatin1Char(';')));
         update.insert(QStringLiteral("SettingsSaved"), 1);
         m_db->updateGameFile(request.gameFileId, update);

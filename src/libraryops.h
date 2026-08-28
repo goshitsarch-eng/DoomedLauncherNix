@@ -46,6 +46,8 @@ signals:
 
 private:
     void fillMetadata(int gameFileId, const QString &storedName);
+    void generateTitlePic(int gameFileId, const QStringList &wadPaths,
+                          const QStringList &pk3Paths, const QString &hintName);
 
     Database *m_db;
 };

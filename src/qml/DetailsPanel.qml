@@ -14,16 +14,27 @@ QQC2.ScrollView {
     readonly property int gameFileId: currentFile && currentFile.GameFileID !== undefined
                                       ? currentFile.GameFileID : -1
 
+    property var levelStats: []
+
     function refreshAssociations() {
         if (gameFileId < 0 || isIdGames) {
             screenshotsModel.clear()
             savesModel.clear()
             demosModel.clear()
+            levelStats = []
             return
         }
         loadInto(screenshotsModel, 1)
         loadInto(demosModel, 2)
         loadInto(savesModel, 3)
+        levelStats = Launcher.statsForGameFile(gameFileId)
+    }
+
+    function formatLevelTime(seconds) {
+        const total = Math.round(seconds)
+        const minutes = Math.floor(total / 60)
+        const secs = total % 60
+        return minutes + ":" + (secs < 10 ? "0" : "") + secs
     }
 
     function loadInto(listModel, fileType) {
@@ -175,6 +186,35 @@ QQC2.ScrollView {
                             onClicked: Launcher.deleteAssociationFile(fileId)
                         }
                     }
+                }
+            }
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.leftMargin: Kirigami.Units.largeSpacing
+            Layout.rightMargin: Kirigami.Units.largeSpacing
+            spacing: Kirigami.Units.smallSpacing
+            visible: !panel.isIdGames && panel.currentFile !== null && panel.levelStats.length > 0
+
+            Kirigami.Heading {
+                level: 4
+                text: i18n("Statistics")
+            }
+
+            Repeater {
+                // Show the most recent recorded levels.
+                model: panel.levelStats.slice(0, 8)
+                delegate: QQC2.Label {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                    font: Kirigami.Theme.smallFont
+                    text: i18n("%1 — kills %2/%3, secrets %4/%5, %6",
+                               modelData.MapName,
+                               modelData.KillCount, modelData.TotalKills,
+                               modelData.SecretCount, modelData.TotalSecrets,
+                               panel.formatLevelTime(modelData.LevelTime))
                 }
             }
         }

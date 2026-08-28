@@ -12,6 +12,19 @@ add_executable(doomedlauncher
     thememanager.cpp
     libraryops.cpp
     launcherapp.cpp
+    doomimage.cpp
+    titlepicextractor.cpp
+    statsreader.cpp
+    storescanner.cpp
+)
+
+qt_add_resources(doomedlauncher "palettes"
+    PREFIX "/palettes"
+    BASE resources
+    FILES
+        resources/PLAYPAL.LMP
+        resources/HereticPalette.pal
+        resources/HexenPalette.pal
 )
 
 set(APP_QML_FILES

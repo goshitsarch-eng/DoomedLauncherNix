@@ -7,6 +7,7 @@
 #include "libraryops.h"
 #include "sourceportdetector.h"
 #include "sourceportmodel.h"
+#include "storescanner.h"
 #include "thememanager.h"
 
 #include <QDesktopServices>
@@ -15,6 +16,8 @@
 #include <QFileInfo>
 #include <QUrl>
 #include <QtConcurrent>
+
+#include <algorithm>
 
 LauncherApp::LauncherApp(QObject *parent)
     : QObject(parent)
@@ -44,6 +47,10 @@ QString LauncherApp::initialize()
     });
     connect(m_launcher, &GameLauncher::launchFailed, this, [this](const QString &message) {
         Q_EMIT toast(tr("Launch failed: %1").arg(message));
+    });
+    connect(m_launcher, &GameLauncher::statisticsRecorded, this, [this](int, int levelCount) {
+        Q_EMIT toast(tr("Recorded statistics for %n level(s)", nullptr, levelCount));
+        Q_EMIT libraryChanged();
     });
     connect(m_idGames, &IdGamesClient::downloadFinished, this,
             [this](const QString &fileName, const QString &localPath) {
@@ -273,6 +280,7 @@ LaunchRequest LauncherApp::requestFromMap(const QVariantMap &map) const
     request.extraParams = map.value(QStringLiteral("extraParams")).toString();
     request.extraParamsOnly = map.value(QStringLiteral("extraParamsOnly"), false).toBool();
     request.loadLatestSave = map.value(QStringLiteral("loadLatestSave"), false).toBool();
+    request.saveStatistics = map.value(QStringLiteral("saveStatistics"), true).toBool();
     request.additionalFiles = map.value(QStringLiteral("additionalFiles")).toStringList();
     request.remember = map.value(QStringLiteral("remember"), true).toBool();
     request.playDemoFile = map.value(QStringLiteral("playDemoFile")).toString();
@@ -341,6 +349,10 @@ QVariantMap LauncherApp::playDefaults(int gameFileId) const
                file.value(QStringLiteral("SettingsExtraParamsOnly")).toInt() != 0);
     map.insert(QStringLiteral("loadLatestSave"),
                file.value(QStringLiteral("SettingsLoadLatestSave")).toInt() != 0);
+    // SettingsStat defaults on: a NULL column means "record statistics".
+    const QVariant settingsStat = file.value(QStringLiteral("SettingsStat"));
+    map.insert(QStringLiteral("saveStatistics"),
+               settingsStat.isNull() || settingsStat.toInt() != 0);
     map.insert(QStringLiteral("additionalFiles"),
                file.value(QStringLiteral("SettingsFiles")).toString()
                    .split(QLatin1Char(';'), Qt::SkipEmptyParts));
@@ -504,6 +516,56 @@ void LauncherApp::detectSourcePorts()
     watcher->setFuture(future);
 }
 
+void LauncherApp::scanGameStores()
+{
+    auto future = QtConcurrent::run([] { return StoreScanner::scan(); });
+    auto *watcher = new QFutureWatcher<StoreScanner::Result>(this);
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher]() {
+        const StoreScanner::Result result = watcher->result();
+        watcher->deleteLater();
+
+        // Imports copy into the managed GameFiles directory, so the store
+        // install stays untouched.
+        int iwads = 0;
+        int pwads = 0;
+        if (!result.iwads.isEmpty())
+            iwads = m_ops->addFiles(result.iwads, true).added.size();
+        if (!result.pwads.isEmpty())
+            pwads = m_ops->addFiles(result.pwads, false).added.size();
+
+        bool foundDoom64 = false;
+        if (!result.doom64Exe.isEmpty()) {
+            foundDoom64 = true;
+            bool known = false;
+            const QVariantList existing = m_db->sourcePorts(-1);
+            for (const QVariant &rowVariant : existing) {
+                if (rowVariant.toMap().value(QStringLiteral("Executable")).toString()
+                        .compare(result.doom64Exe, Qt::CaseInsensitive) == 0)
+                    known = true;
+            }
+            if (!known) {
+                QVariantMap fields;
+                fields.insert(QStringLiteral("Name"), tr("Doom 64 (Re-release)"));
+                fields.insert(QStringLiteral("Executable"), result.doom64Exe);
+                fields.insert(QStringLiteral("Directory"),
+                              QFileInfo(result.doom64Exe).absolutePath());
+                fields.insert(QStringLiteral("LaunchType"), 2 /*Doom64*/);
+                m_db->insertSourcePort(fields);
+                m_sourcePorts->reload();
+            }
+        }
+
+        ensureDefaults();
+        Q_EMIT storeScanFinished(iwads, pwads, foundDoom64);
+        Q_EMIT libraryChanged();
+        if (iwads + pwads > 0)
+            Q_EMIT toast(tr("Imported %1 WAD(s) from Steam/GOG installs").arg(iwads + pwads));
+        else
+            Q_EMIT toast(tr("No Steam/GOG Doom installs found"));
+    });
+    watcher->setFuture(future);
+}
+
 void LauncherApp::ensureDefaults()
 {
     // Pick a default source port (preferring the ZDoom family) and a
@@ -584,6 +646,9 @@ QVariantMap LauncherApp::statsSummary(const QList<int> &gameFileIds) const
     int totalMinutes = 0;
     int fileCount = 0;
     int mapCount = 0;
+    int kills = 0;
+    int secrets = 0;
+    int sessions = 0;
     for (int id : gameFileIds) {
         const QVariantMap file = m_db->gameFileById(id);
         if (file.isEmpty())
@@ -591,10 +656,27 @@ QVariantMap LauncherApp::statsSummary(const QList<int> &gameFileIds) const
         ++fileCount;
         totalMinutes += file.value(QStringLiteral("MinutesPlayed")).toInt();
         mapCount += file.value(QStringLiteral("MapCount")).toInt();
+        const QVariantList statRows = m_db->stats(id);
+        sessions += statRows.size();
+        for (const QVariant &statVariant : statRows) {
+            const QVariantMap stat = statVariant.toMap();
+            kills += stat.value(QStringLiteral("KillCount")).toInt();
+            secrets += stat.value(QStringLiteral("SecretCount")).toInt();
+        }
     }
     return {
         {QStringLiteral("files"), fileCount},
         {QStringLiteral("maps"), mapCount},
         {QStringLiteral("minutesPlayed"), totalMinutes},
+        {QStringLiteral("kills"), kills},
+        {QStringLiteral("secrets"), secrets},
+        {QStringLiteral("recordedLevels"), sessions},
     };
+}
+
+QVariantList LauncherApp::statsForGameFile(int gameFileId) const
+{
+    QVariantList rows = m_db->stats(gameFileId);
+    std::reverse(rows.begin(), rows.end());
+    return rows;
 }

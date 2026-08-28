@@ -508,6 +508,43 @@ QList<int> Database::gameFileIdsForTag(int tagId) const
     return ids;
 }
 
+// Statistics ---------------------------------------------------------------------
+
+QVariantList Database::stats(int gameFileId) const
+{
+    QVariantList result;
+    QSqlQuery query(m_db);
+    query.prepare(QStringLiteral("select * from Stats where GameFileID = ? order by StatID"));
+    query.addBindValue(gameFileId);
+    if (!query.exec())
+        return result;
+    while (query.next())
+        result.append(rowToMap(query));
+    return result;
+}
+
+void Database::insertStats(const QVariantMap &fields)
+{
+    QSqlQuery query(m_db);
+    query.prepare(QStringLiteral(
+        "insert into Stats (GameFileID, KillCount, TotalKills, SecretCount, TotalSecrets, LevelTime, "
+        "ItemCount, TotalItems, SourcePortID, MapName, RecordTime, Skill) "
+        "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"));
+    query.addBindValue(fields.value(QStringLiteral("GameFileID")));
+    query.addBindValue(fields.value(QStringLiteral("KillCount"), 0));
+    query.addBindValue(fields.value(QStringLiteral("TotalKills"), 0));
+    query.addBindValue(fields.value(QStringLiteral("SecretCount"), 0));
+    query.addBindValue(fields.value(QStringLiteral("TotalSecrets"), 0));
+    query.addBindValue(fields.value(QStringLiteral("LevelTime"), 0.0));
+    query.addBindValue(fields.value(QStringLiteral("ItemCount"), 0));
+    query.addBindValue(fields.value(QStringLiteral("TotalItems"), 0));
+    query.addBindValue(fields.value(QStringLiteral("SourcePortID"), -1));
+    query.addBindValue(fields.value(QStringLiteral("MapName")));
+    query.addBindValue(QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd HH:mm:ss")));
+    query.addBindValue(fields.value(QStringLiteral("Skill")));
+    query.exec();
+}
+
 // Association files ------------------------------------------------------------
 
 QVariantList Database::files(int gameFileId, int fileTypeId) const

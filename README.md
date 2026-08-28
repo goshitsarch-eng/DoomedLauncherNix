@@ -21,6 +21,18 @@ light, dark and follow-system color schemes.
 - **Source port detection**: GZDoom, UZDoom, VKDoom, dsda-doom, Crispy,
   Chocolate, Woof!, Eternity and more — as native binaries, AppImages,
   Flatpaks (`flatpak:org.zdoom.GZDoom`) or snaps (`snap:gzdoom`)
+- **Title screens as library art**: TITLEPIC/TITLE lumps are decoded
+  (classic Doom picture format, flats, or embedded PNGs, honoring the
+  wad's own PLAYPAL and MAPINFO `titlepage=` overrides) and shown in the
+  tile view and details panel
+- **Per-level statistics**: kills/items/secrets/time recorded after each
+  session — from `-levelstat` (dsda-doom, PrBoom+, Crispy, Woof!, …),
+  `-statdump` (Chocolate Doom family) or ZDoom-family save games — and
+  shown in the details panel
+- **Steam/GOG/Heroic/Lutris scan**: finds installed Doom, Doom II, Final
+  Doom, Heretic, Hexen, Strife and Doom 64, imports their IWADs and
+  expansion WADs (NERVE, SIGIL, Master Levels, …), and registers the
+  Doom 64 re-release binary as a source port
 - **idgames browser**: search the archive, download from a mirror and
   auto-import into the library, straight from the app
 - **Play time tracking**, screenshots/saves/demos per entry, IWAD

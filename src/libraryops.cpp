@@ -3,12 +3,15 @@
 #include "archivereader.h"
 #include "database.h"
 #include "launcherpaths.h"
+#include "titlepicextractor.h"
 #include "wadparser.h"
 
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
+#include <QImage>
 #include <QRegularExpression>
+#include <QUuid>
 
 namespace
 {
@@ -53,17 +56,6 @@ TextInfo parseTextFile(const QString &content)
     return info;
 }
 
-QStringList wadEntryPaths(const QString &archivePath)
-{
-    QStringList wads;
-    const QList<ArchiveReader::Entry> entries = ArchiveReader::entries(archivePath);
-    for (const ArchiveReader::Entry &entry : entries) {
-        const QString suffix = QFileInfo(entry.name).suffix().toLower();
-        if (suffix == QStringLiteral("wad") || suffix == QStringLiteral("iwad"))
-            wads.append(entry.name);
-    }
-    return wads;
-}
 }
 
 LibraryOps::LibraryOps(Database *db, QObject *parent)
@@ -144,19 +136,39 @@ void LibraryOps::fillMetadata(int gameFileId, const QString &storedName)
 {
     const QString path = LauncherPaths::gameFilesDir() + QLatin1Char('/') + storedName;
 
-    // Map list: read every wad (inside the archive or the file itself).
-    QStringList maps;
+    // Collect the wads and pk3s making up this game file (extracting from
+    // a zip container when needed); maps and the title pic both use them.
+    QStringList wadPaths;
+    QStringList pk3Paths;
+    const QString suffix = QFileInfo(path).suffix().toLower();
     if (ArchiveReader::isZipContainer(path)) {
-        for (const QString &entryName : wadEntryPaths(path)) {
-            const QString extracted =
-                ArchiveReader::extract(path, entryName, LauncherPaths::tempDir());
-            if (!extracted.isEmpty())
-                maps += WadParser::mapNames(extracted);
+        const QList<ArchiveReader::Entry> entries = ArchiveReader::entries(path);
+        for (const ArchiveReader::Entry &entry : entries) {
+            const QString entrySuffix = QFileInfo(entry.name).suffix().toLower();
+            if (entrySuffix == QStringLiteral("wad") || entrySuffix == QStringLiteral("iwad")) {
+                const QString extracted =
+                    ArchiveReader::extract(path, entry.name, LauncherPaths::tempDir());
+                if (!extracted.isEmpty())
+                    wadPaths.append(extracted);
+            } else if (entrySuffix == QStringLiteral("pk3") || entrySuffix == QStringLiteral("ipk3")) {
+                const QString extracted =
+                    ArchiveReader::extract(path, entry.name, LauncherPaths::tempDir());
+                if (!extracted.isEmpty())
+                    pk3Paths.append(extracted);
+            }
         }
     } else if (WadParser::isWad(path)) {
-        maps = WadParser::mapNames(path);
+        wadPaths.append(path);
+    } else if (suffix == QStringLiteral("pk3") || suffix == QStringLiteral("ipk3")) {
+        pk3Paths.append(path);
     }
+
+    QStringList maps;
+    for (const QString &wadPath : wadPaths)
+        maps += WadParser::mapNames(wadPath);
     maps.removeDuplicates();
+
+    generateTitlePic(gameFileId, wadPaths, pk3Paths, storedName);
 
     QVariantMap update;
     if (!maps.isEmpty()) {
@@ -192,6 +204,35 @@ void LibraryOps::fillMetadata(int gameFileId, const QString &storedName)
     if (update.isEmpty())
         return;
     m_db->updateGameFile(gameFileId, update);
+}
+
+void LibraryOps::generateTitlePic(int gameFileId, const QStringList &wadPaths,
+                                  const QStringList &pk3Paths, const QString &hintName)
+{
+    if (wadPaths.isEmpty() && pk3Paths.isEmpty())
+        return;
+    if (!m_db->configBool(QStringLiteral("AutomaticallyPullTitlpic"), true))
+        return;
+
+    // Keep an existing title pic (a resync re-extracts only when the row's
+    // file went missing on disk).
+    const QVariantList existing = m_db->files(gameFileId, 6 /*TitlePic*/);
+    for (const QVariant &fileVariant : existing) {
+        const QString name = fileVariant.toMap().value(QStringLiteral("FileName")).toString();
+        if (QFileInfo::exists(LauncherPaths::titlePicsDir() + QLatin1Char('/') + name))
+            return;
+        m_db->deleteFile(fileVariant.toMap().value(QStringLiteral("FileID")).toInt());
+    }
+
+    const QImage image = TitlePicExtractor::extract(wadPaths, pk3Paths, hintName);
+    if (image.isNull())
+        return;
+
+    const QString name =
+        QUuid::createUuid().toString(QUuid::WithoutBraces) + QStringLiteral(".png");
+    if (!image.save(LauncherPaths::titlePicsDir() + QLatin1Char('/') + name, "PNG"))
+        return;
+    m_db->insertFile(gameFileId, name, 6 /*TitlePic*/, -1, QStringLiteral("TITLEPIC"));
 }
 
 void LibraryOps::resync(int gameFileId)

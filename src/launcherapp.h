@@ -90,6 +90,10 @@ public:
     // Source port detection --------------------------------------------------
     Q_INVOKABLE void detectSourcePorts();
 
+    // Steam/GOG/Heroic/Lutris scan: imports found IWADs, expansion wads
+    // and the Doom 64 re-release binary. Emits storeScanFinished.
+    Q_INVOKABLE void scanGameStores();
+
     // Settings page ----------------------------------------------------------
     Q_INVOKABLE QVariantList configEntries() const;
     Q_INVOKABLE void setConfigValue(const QString &name, const QString &value);
@@ -99,6 +103,8 @@ public:
 
     // Statistics summary for the selected files.
     Q_INVOKABLE QVariantMap statsSummary(const QList<int> &gameFileIds) const;
+    // Recorded per-level statistics rows for one file, newest first.
+    Q_INVOKABLE QVariantList statsForGameFile(int gameFileId) const;
 
 signals:
     void tabsChanged();
@@ -107,6 +113,7 @@ signals:
     void toast(const QString &message);
     void detectFinished(int addedCount);
     void addFinished(int added, int failed);
+    void storeScanFinished(int iwads, int pwads, bool foundDoom64);
 
 private:
     LaunchRequest requestFromMap(const QVariantMap &map) const;

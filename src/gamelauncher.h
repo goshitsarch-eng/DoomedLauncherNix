@@ -18,6 +18,7 @@ struct LaunchRequest {
     QString extraParams;
     bool extraParamsOnly = false;
     bool loadLatestSave = false;
+    bool saveStatistics = true; // record per-level stats when the port supports it
     QString recordDemoFile;     // path to write, empty = no recording
     QString playDemoFile;       // path to play back, empty = none
     QStringList additionalFiles; // FileName values of extra mods (matches SettingsFiles)
@@ -48,15 +49,29 @@ signals:
     void processExited(int gameFileId, int minutesPlayed);
     void launchFailed(const QString &message);
 
+signals:
+    void statisticsRecorded(int gameFileId, int levelCount);
+
 private:
+    // How a session's statistics get collected, decided at launch time.
+    struct StatSession {
+        int kind = 0;            // StatsReader::Kind as int
+        QString statFile;        // levelstat.txt / statdump output path
+        QStringList watchDirs;   // save dirs scanned for new .zds files
+        QDateTime launchTime;
+    };
+
     struct BuiltCommand {
         QString program;
         QStringList arguments;
         QString workingDirectory;
         QString error;
+        StatSession statSession;
     };
 
     BuiltCommand build(const LaunchRequest &request);
+    void prepareStatistics(BuiltCommand &command, const QVariantMap &sourcePort);
+    void collectStatistics(const StatSession &session, int gameFileId, int sourcePortId);
     QStringList gameFileLaunchPaths(const QVariantMap &gameFile, const QVariantMap &sourcePort,
                                     const QStringList &specificFiles, QString *error);
     QString extractIwad(const QVariantMap &iwadGameFile, const QVariantMap &sourcePort, QString *error);

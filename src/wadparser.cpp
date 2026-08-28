@@ -99,6 +99,32 @@ QStringList mapNames(const QString &filePath)
     return maps;
 }
 
+QStringList lumpNames(const QString &filePath)
+{
+    QStringList names;
+    const QList<DirectoryEntry> entries = readDirectory(filePath);
+    names.reserve(entries.size());
+    for (const DirectoryEntry &entry : entries)
+        names.append(entry.name);
+    return names;
+}
+
+QByteArray lumpData(const QString &filePath, const QString &lumpName)
+{
+    const QList<DirectoryEntry> entries = readDirectory(filePath);
+    for (const DirectoryEntry &entry : entries) {
+        if (entry.name.compare(lumpName, Qt::CaseInsensitive) != 0)
+            continue;
+        if (entry.size <= 0 || entry.offset < 0)
+            return {};
+        QFile file(filePath);
+        if (!file.open(QIODevice::ReadOnly) || !file.seek(entry.offset))
+            return {};
+        return file.read(entry.size);
+    }
+    return {};
+}
+
 QString iwadDisplayName(const QString &fileName)
 {
     const QString base = QFileInfo(fileName).completeBaseName().toLower();

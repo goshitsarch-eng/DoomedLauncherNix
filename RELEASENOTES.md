@@ -24,6 +24,17 @@ Fork versions are numbered separately from upstream releases.
   live command preview, source port detection (native/AppImage/Flatpak/
   snap), idgames search + download, play time tracking, setup assistant.
 - Flatpak packaging moved to the org.kde.Platform runtime.
+- Title screens (TITLEPIC/TITLE, including MAPINFO titlepage overrides and
+  embedded PNGs) are extracted as library art, using the wad's own PLAYPAL
+  or the built-in Doom/Heretic/Hexen palettes.
+- Per-level statistics are recorded again: levelstat (dsda-doom, PrBoom+,
+  Crispy, Woof! and friends), statdump (Chocolate Doom family) and
+  ZDoom-family save games, stored in the same Stats table and shown in the
+  details panel.
+- The Steam/GOG/Heroic/Lutris scan is back: installed id classics are
+  found via libraryfolders.vdf/appmanifests or the usual install folders,
+  IWADs and expansion WADs are imported, and the Doom 64 re-release binary
+  is registered as a Doom 64 source port.
 
 ## 3.7.9.3
 

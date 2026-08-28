@@ -79,6 +79,11 @@ Kirigami.ApplicationWindow {
                 onTriggered: addFolderDialog.open()
             },
             Kirigami.Action {
+                text: i18n("Load WADs from Steam/GOG…")
+                icon.name: "folder-download"
+                onTriggered: Launcher.scanGameStores()
+            },
+            Kirigami.Action {
                 text: i18n("Get Mods (idgames)…")
                 icon.name: "download"
                 onTriggered: root.pushUnique(getModsPageComponent)
@@ -159,6 +164,7 @@ Kirigami.ApplicationWindow {
     Component.onCompleted: {
         if (Launcher.needsSetup) {
             Launcher.detectSourcePorts()
+            Launcher.scanGameStores()
             root.pageStack.push(setupPageComponent)
         }
     }

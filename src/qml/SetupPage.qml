@@ -99,10 +99,17 @@ Kirigami.ScrollablePage {
                     wrapMode: Text.Wrap
                     text: i18n("Add your game WADs (doom2.wad, doom.wad, heretic.wad, …). Freedoom works too and is freely available.")
                 }
-                QQC2.Button {
-                    text: i18n("Add IWAD Files…")
-                    icon.name: "list-add"
-                    onClicked: iwadDialog.open()
+                RowLayout {
+                    QQC2.Button {
+                        text: i18n("Add IWAD Files…")
+                        icon.name: "list-add"
+                        onClicked: iwadDialog.open()
+                    }
+                    QQC2.Button {
+                        text: i18n("Load from Steam/GOG…")
+                        icon.name: "folder-download"
+                        onClicked: Launcher.scanGameStores()
+                    }
                 }
             }
         }

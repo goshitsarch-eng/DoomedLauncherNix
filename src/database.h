@@ -61,6 +61,10 @@ public:
     QList<int> tagsForGameFile(int gameFileId) const;
     QList<int> gameFileIdsForTag(int tagId) const;
 
+    // Statistics -------------------------------------------------------------
+    QVariantList stats(int gameFileId) const;
+    void insertStats(const QVariantMap &fields);
+
     // Association files (screenshots, demos, saves) --------------------------
     QVariantList files(int gameFileId, int fileTypeId) const;
     int insertFile(int gameFileId, const QString &fileName, int fileTypeId,

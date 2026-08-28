@@ -54,6 +54,7 @@ Kirigami.Dialog {
         extraParamsField.text = defaults.extraParams
         extraOnlyCheck.checked = defaults.extraParamsOnly
         loadSaveCheck.checked = defaults.loadLatestSave
+        statsCheck.checked = defaults.saveStatistics !== undefined ? defaults.saveStatistics : true
         recordCheck.checked = false
         rememberCheck.checked = true
         additionalFiles = defaults.additionalFiles !== undefined ? defaults.additionalFiles : []
@@ -71,6 +72,7 @@ Kirigami.Dialog {
             extraParams: extraParamsField.text,
             extraParamsOnly: extraOnlyCheck.checked,
             loadLatestSave: loadSaveCheck.checked,
+            saveStatistics: statsCheck.checked,
             recordDemo: recordCheck.checked,
             additionalFiles: additionalFiles,
             remember: rememberCheck.checked
@@ -135,6 +137,12 @@ Kirigami.Dialog {
         QQC2.CheckBox {
             id: loadSaveCheck
             text: i18n("Load latest save")
+        }
+
+        QQC2.CheckBox {
+            id: statsCheck
+            text: i18n("Save statistics")
+            checked: true
         }
 
         QQC2.CheckBox {
