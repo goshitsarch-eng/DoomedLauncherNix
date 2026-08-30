@@ -1,0 +1,3 @@
+#pragma once
+
+#define DOOMEDLAUNCHER_VERSION "@PROJECT_VERSION@"

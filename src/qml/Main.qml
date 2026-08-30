@@ -7,6 +7,7 @@ Kirigami.ApplicationWindow {
     id: root
 
     title: i18n("Doom Launcher")
+    visible: true
     width: 1100
     height: 720
     minimumWidth: 720

@@ -42,7 +42,7 @@ public:
     Q_INVOKABLE void save(int sourcePortId, const QVariantMap &fields);
     Q_INVOKABLE void remove(int sourcePortId);
 
-signals:
+Q_SIGNALS:
     void countChanged();
     void launchTypeChanged();
 

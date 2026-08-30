@@ -24,7 +24,7 @@ public:
     // Applies the stored preference; call once at startup.
     void apply();
 
-signals:
+Q_SIGNALS:
     void colorSchemeChanged();
 
 private:

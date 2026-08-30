@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(DoomedLauncher VERSION 4.0.0 LANGUAGES CXX)
+project(DoomedLauncher VERSION 4.0.1 LANGUAGES CXX)
 
 set(QT_MIN_VERSION "6.8.0")
 set(KF_MIN_VERSION "6.6.0")
@@ -13,8 +13,9 @@ include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)
 include(ECMInstallIcons)
 include(FeatureSummary)
+include(CTest)
 
-find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS
+set(QT_COMPONENTS
     Core
     Gui
     Qml
@@ -25,6 +26,11 @@ find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS
     Widgets
     Concurrent
 )
+if(BUILD_TESTING)
+    list(APPEND QT_COMPONENTS Test)
+endif()
+
+find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS ${QT_COMPONENTS})
 
 find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS
     Kirigami
@@ -37,7 +43,12 @@ find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS
 
 qt_policy(SET QTP0001 NEW)
 
+configure_file(src/version.h.in generated/version.h @ONLY)
+
 add_subdirectory(src)
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
 
 install(PROGRAMS data/com.goshapps.DoomLauncher.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 install(FILES data/com.goshapps.DoomLauncher.metainfo.xml DESTINATION ${KDE_INSTALL_METAINFODIR})

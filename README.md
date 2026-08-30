@@ -4,6 +4,8 @@ A Doom frontend and WAD library for Linux, built with **Qt 6** and **KDE
 Kirigami** so it looks and feels like a modern KDE application — with
 light, dark and follow-system color schemes.
 
+Current release: **4.0.1**.
+
 > DoomedLauncherNix is a Linux-focused fork of
 > [Doom Launcher](https://github.com/nstlaurent/DoomLauncher) by
 > [Hobomaster22 (nstlaurent)](https://github.com/nstlaurent). The launcher
@@ -55,14 +57,21 @@ tags, source ports and play history are picked up as-is.
 Dependencies: Qt ≥ 6.8 (Quick, Controls2, Sql, Network, Widgets,
 Concurrent), KDE Frameworks ≥ 6.6 (Kirigami, KCoreAddons, KI18n,
 KColorScheme, KArchive, KIconThemes), extra-cmake-modules, and at runtime
-qqc2-desktop-style plus breeze-icons.
+qqc2-desktop-style plus breeze-icons. Building the regression tests also
+requires the Qt 6 Test module. The KDE 6.10 SDK provides all build-time
+dependencies used by the Flatpak manifest.
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+cmake --build build --parallel 2
+ctest --test-dir build --output-on-failure
 sudo cmake --install build
 doomedlauncher
 ```
+
+Use `-DBUILD_TESTING=OFF` only when producing a minimal package without the
+Qt Test development module. `doomedlauncher --version` reports the same
+4.0.1 version recorded in CMake and AppStream metadata.
 
 ### Flatpak
 

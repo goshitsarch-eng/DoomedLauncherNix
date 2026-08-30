@@ -3,6 +3,7 @@
 #include "archivereader.h"
 #include "database.h"
 #include "launcherpaths.h"
+#include "managedpath.h"
 #include "titlepicextractor.h"
 #include "wadparser.h"
 
@@ -92,7 +93,12 @@ LibraryOps::AddResult LibraryOps::addFiles(const QStringList &paths, bool asIwad
                 result.added.append(storedName);
                 continue;
             }
-            QFile::remove(destPath);
+            // Never replace an untracked file in managed storage merely
+            // because an import happens to use the same base name.
+            if (QFileInfo::exists(destPath)) {
+                result.failed.append(sourcePath);
+                continue;
+            }
             if (!QFile::copy(sourceInfo.absoluteFilePath(), destPath)) {
                 result.failed.append(sourcePath);
                 continue;
@@ -241,7 +247,7 @@ void LibraryOps::resync(int gameFileId)
     if (row.isEmpty())
         return;
     const QString fileName = row.value(QStringLiteral("FileName")).toString();
-    if (!QDir::isAbsolutePath(fileName))
+    if (ManagedPath::isSafeFileName(fileName))
         fillMetadata(gameFileId, fileName);
 }
 
@@ -252,7 +258,7 @@ void LibraryOps::deleteGameFile(int gameFileId, bool deleteManagedFile)
         return;
     if (deleteManagedFile) {
         const QString fileName = row.value(QStringLiteral("FileName")).toString();
-        if (!QDir::isAbsolutePath(fileName))
+        if (ManagedPath::isSafeFileName(fileName))
             QFile::remove(LauncherPaths::gameFilesDir() + QLatin1Char('/') + fileName);
     }
     m_db->deleteGameFile(gameFileId);
@@ -264,8 +270,10 @@ QString LibraryOps::renameGameFile(int gameFileId, const QString &newName)
     if (row.isEmpty())
         return tr("File not found.");
     const QString oldName = row.value(QStringLiteral("FileName")).toString();
-    if (QDir::isAbsolutePath(oldName))
+    if (!ManagedPath::isSafeFileName(oldName))
         return tr("Unmanaged files cannot be renamed from the launcher.");
+    if (!ManagedPath::isSafeFileName(newName))
+        return tr("The new name must be a file name without directory components.");
 
     const QString oldPath = LauncherPaths::gameFilesDir() + QLatin1Char('/') + oldName;
     const QString newPath = LauncherPaths::gameFilesDir() + QLatin1Char('/') + newName;
@@ -308,6 +316,8 @@ QString LibraryOps::gameFilePath(int gameFileId) const
     const QString fileName = row.value(QStringLiteral("FileName")).toString();
     if (QDir::isAbsolutePath(fileName))
         return fileName;
+    if (!ManagedPath::isSafeFileName(fileName))
+        return {};
     return LauncherPaths::gameFilesDir() + QLatin1Char('/') + fileName;
 }
 

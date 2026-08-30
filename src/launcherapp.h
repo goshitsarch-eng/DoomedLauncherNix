@@ -106,7 +106,7 @@ public:
     // Recorded per-level statistics rows for one file, newest first.
     Q_INVOKABLE QVariantList statsForGameFile(int gameFileId) const;
 
-signals:
+Q_SIGNALS:
     void tabsChanged();
     void configChanged();
     void libraryChanged();

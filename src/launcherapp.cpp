@@ -1,5 +1,7 @@
 #include "launcherapp.h"
 
+#include "externalurl.h"
+
 #include "database.h"
 #include "idgamesclient.h"
 #include "launcherpaths.h"
@@ -264,7 +266,12 @@ void LauncherApp::openTextFile(int gameFileId)
 
 void LauncherApp::openUrl(const QString &url)
 {
-    QDesktopServices::openUrl(QUrl(url));
+    const QUrl target = ExternalUrl::fromHttpInput(url);
+    if (target.isEmpty()) {
+        Q_EMIT toast(tr("Refused to open an unsupported URL."));
+        return;
+    }
+    QDesktopServices::openUrl(target);
 }
 
 // Launching -------------------------------------------------------------------
