@@ -1,4 +1,5 @@
 #include "launcherapp.h"
+#include "version.h"
 
 #include <KAboutData>
 #include <KIconTheme>
@@ -6,6 +7,7 @@
 #include <KLocalizedString>
 
 #include <QApplication>
+#include <QCommandLineParser>
 #include <QFileInfo>
 #include <QIcon>
 #include <QQmlApplicationEngine>
@@ -20,6 +22,7 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     KLocalizedString::setApplicationDomain("doomedlauncher");
     QApplication::setApplicationName(QStringLiteral("doomedlauncher"));
+    QApplication::setOrganizationName(QStringLiteral("Gosh"));
     QApplication::setOrganizationDomain(QStringLiteral("goshapps.com"));
     QApplication::setDesktopFileName(QStringLiteral("com.goshapps.DoomLauncher"));
     QApplication::setWindowIcon(QIcon::fromTheme(QStringLiteral("com.goshapps.DoomLauncher")));
@@ -27,13 +30,20 @@ int main(int argc, char *argv[])
     KAboutData about(
         QStringLiteral("doomedlauncher"),
         i18n("Doom Launcher"),
-        QStringLiteral("4.0.0"),
+        QStringLiteral(DOOMEDLAUNCHER_VERSION),
         i18n("Doom frontend and WAD library for KDE"),
         KAboutLicense::GPL_V3,
         i18n("© DoomLauncher / DoomedLauncherNix contributors"));
+    about.addAuthor(i18n("Gosh"));
     about.setHomepage(QStringLiteral("https://github.com/GoshitsArch-eng/DoomedLauncherNix"));
     about.setBugAddress("https://github.com/GoshitsArch-eng/DoomedLauncherNix/issues");
     KAboutData::setApplicationData(about);
+
+    QCommandLineParser parser;
+    about.setupCommandLine(&parser);
+    parser.addPositionalArgument(i18n("files"), i18n("Files to import into the library."));
+    parser.process(app);
+    about.processCommandLine(&parser);
 
     // The KDE Qt Quick Controls style everywhere; fall back to a
     // Kirigami-compatible style outside Plasma sessions.

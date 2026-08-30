@@ -52,7 +52,7 @@ public:
     bool sortDescending() const { return m_sortDescending; }
     void setSortDescending(bool descending);
 
-signals:
+Q_SIGNALS:
     void countChanged();
     void sortChanged();
 

@@ -45,11 +45,9 @@ public:
 
     bool hasActiveSessions() const { return m_activeSessions > 0; }
 
-signals:
+Q_SIGNALS:
     void processExited(int gameFileId, int minutesPlayed);
     void launchFailed(const QString &message);
-
-signals:
     void statisticsRecorded(int gameFileId, int levelCount);
 
 private:

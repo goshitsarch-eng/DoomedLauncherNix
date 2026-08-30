@@ -5,6 +5,7 @@
 #include <KColorSchemeManager>
 
 #include <QGuiApplication>
+#include <QModelIndex>
 #include <QStyleHints>
 
 ThemeManager::ThemeManager(Database *db, QObject *parent)

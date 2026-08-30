@@ -73,4 +73,6 @@ target_link_libraries(doomedlauncher PRIVATE
     KF6::IconThemes
 )
 
+target_include_directories(doomedlauncher PRIVATE ${CMAKE_BINARY_DIR}/generated)
+
 install(TARGETS doomedlauncher ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})

@@ -41,7 +41,7 @@ public:
     // records it in the Files table. Returns false on failure.
     bool importAssociationFile(int gameFileId, const QString &path, int fileType);
 
-signals:
+Q_SIGNALS:
     void progress(const QString &fileName, int current, int total);
 
 private:

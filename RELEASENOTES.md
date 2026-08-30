@@ -6,7 +6,7 @@ added by this fork; upstream's own release notes follow further down, unchanged.
 
 Fork versions are numbered separately from upstream releases.
 
-## 4.0.0
+## 4.0.1
 
 ### Complete rewrite in Qt 6 / Kirigami
 
@@ -35,6 +35,10 @@ Fork versions are numbered separately from upstream releases.
   found via libraryfolders.vdf/appmanifests or the usual install folders,
   IWADs and expansion WADs are imported, and the Doom 64 re-release binary
   is registered as a Doom 64 source port.
+- Hardened managed-library file operations against path traversal and stopped
+  imports from overwriting untracked files with a colliding base name.
+- Restricted external links to HTTP(S), fixed the library search field's QML
+  lifetime, and added CTest coverage for path, URL, identity and version rules.
 
 ## 3.7.9.3
 

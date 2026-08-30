@@ -14,17 +14,18 @@ Kirigami.Page {
     property bool isIdGamesTab: currentTab !== null && currentTab.kind === 4
     property int selectedGameFileId: -1
     property var selectedIds: []
+    property string searchText: ""
 
     function reload() {
         if (!currentTab)
             return
         if (isIdGamesTab) {
-            if (searchField.text.length >= 3)
-                Launcher.idGames.search("title", searchField.text)
+            if (searchText.length >= 3)
+                Launcher.idGames.search("title", searchText)
             else
                 Launcher.idGames.loadLatest()
         } else {
-            Launcher.library.load(currentTab.kind, currentTab.tagId, searchField.text)
+            Launcher.library.load(currentTab.kind, currentTab.tagId, searchText)
         }
     }
 
@@ -82,11 +83,13 @@ Kirigami.Page {
         spacing: Kirigami.Units.smallSpacing
 
         Kirigami.SearchField {
-            id: searchField
             Layout.fillWidth: true
             Layout.minimumWidth: Kirigami.Units.gridUnit * 12
             placeholderText: i18n("Search title, author, filename…")
-            onTextChanged: searchDebounce.restart()
+            onTextChanged: {
+                page.searchText = text
+                searchDebounce.restart()
+            }
             onAccepted: page.reload()
         }
     }

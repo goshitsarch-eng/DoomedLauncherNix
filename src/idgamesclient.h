@@ -31,7 +31,7 @@ public:
 
     Q_INVOKABLE QString webUrl(const QString &idgamesUrl) const;
 
-signals:
+Q_SIGNALS:
     void busyChanged();
     void searchFinished(const QVariantList &results);
     void searchFailed(const QString &message);
