@@ -58,7 +58,7 @@ Dependencies: Qt ≥ 6.8 (Quick, Controls2, Sql, Network, Widgets,
 Concurrent), KDE Frameworks ≥ 6.6 (Kirigami, KCoreAddons, KI18n,
 KColorScheme, KArchive, KIconThemes), extra-cmake-modules, and at runtime
 qqc2-desktop-style plus breeze-icons. Building the regression tests also
-requires the Qt 6 Test module. The KDE 6.9 SDK provides all build-time
+requires the Qt 6 Test module. The KDE 6.10 SDK provides all build-time
 dependencies used by the Flatpak manifest.
 
 ```bash

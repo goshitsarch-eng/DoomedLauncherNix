@@ -17,6 +17,7 @@ assert_contains("data/com.goshapps.DoomLauncher.metainfo.xml" "<name>Gosh</name>
 assert_contains("data/com.goshapps.DoomLauncher.metainfo.xml" "<release version=\"${expected_version}\"")
 assert_contains("README.md" "Current release: **${expected_version}**")
 assert_contains("RELEASENOTES.md" "## ${expected_version}")
+assert_contains("flatpak/com.goshapps.DoomLauncher.yml" "runtime-version: '6.10'")
 
 file(READ "${source_dir}/src/main.cpp" main_source)
 file(READ "${source_dir}/data/com.goshapps.DoomLauncher.metainfo.xml" appstream_source)
