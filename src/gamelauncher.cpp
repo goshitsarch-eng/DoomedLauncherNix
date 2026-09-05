@@ -4,6 +4,7 @@
 #include "database.h"
 #include "launcherpaths.h"
 #include "sourceportdetector.h"
+#include "hostprocess.h"
 #include "statsreader.h"
 
 #include <QDir>
@@ -175,23 +176,33 @@ GameLauncher::BuiltCommand GameLauncher::build(const LaunchRequest &request)
 
     // Resolve the program: flatpak:<id>, snap:<name>, or a binary.
     if (executable.startsWith(QStringLiteral("flatpak:"), Qt::CaseInsensitive)) {
+        static const QRegularExpression appId(QStringLiteral("^[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*){2,}$"));
+        if (!appId.match(executable.mid(8).trimmed()).hasMatch()) {
+            command.error = tr("Invalid Flatpak application ID.");
+            return command;
+        }
         command.program = QStringLiteral("flatpak");
         command.arguments << QStringLiteral("run") << QStringLiteral("--filesystem=host")
                           << QStringLiteral("--filesystem=home") << executable.mid(8).trimmed()
                           << QStringLiteral("--");
     } else if (executable.startsWith(QStringLiteral("snap:"), Qt::CaseInsensitive)) {
+        static const QRegularExpression snapName(QStringLiteral("^[a-z0-9][a-z0-9_-]*(\\.[a-zA-Z0-9_-]+)?$"));
+        if (!snapName.match(executable.mid(5).trimmed()).hasMatch()) {
+            command.error = tr("Invalid Snap application name.");
+            return command;
+        }
         command.program = QStringLiteral("snap");
         command.arguments << QStringLiteral("run") << executable.mid(5).trimmed();
-    } else if (QDir::isAbsolutePath(executable) && QFileInfo::exists(executable)) {
-        command.program = executable;
     } else {
-        QString full = executable;
-        if (!portDirectory.isEmpty() && QFileInfo::exists(
+        QString full;
+        if (QDir::isAbsolutePath(executable))
+            full = executable;
+        else if (!portDirectory.isEmpty() && HostProcess::isExecutable(
                 LauncherPaths::resolve(portDirectory) + QLatin1Char('/') + executable))
             full = LauncherPaths::resolve(portDirectory) + QLatin1Char('/') + executable;
         else if (const QString found = SourcePortDetector::findExecutable(executable); !found.isEmpty())
             full = found;
-        if (full.isEmpty() || (!QFileInfo::exists(full) && QDir::isAbsolutePath(full))) {
+        if (!HostProcess::isExecutable(full)) {
             command.error = tr("Source port executable '%1' was not found. Open Source Ports to "
                                "detect an installed port or enter its full path.").arg(executable);
             return command;
@@ -204,7 +215,7 @@ GameLauncher::BuiltCommand GameLauncher::build(const LaunchRequest &request)
     else if (QDir::isAbsolutePath(command.program))
         command.workingDirectory = QFileInfo(command.program).absolutePath();
     else
-        command.workingDirectory = QDir::homePath();
+        command.workingDirectory = HostProcess::homePath();
 
     // Source port extra parameters always apply.
     const QString portExtra = sourcePort.value(QStringLiteral("ExtraParameters")).toString().trimmed();
@@ -455,27 +466,29 @@ QString GameLauncher::launch(const LaunchRequest &request)
         return command.error;
 
     auto *process = new QProcess(this);
-    process->setProgram(command.program);
-    process->setArguments(command.arguments);
-    process->setWorkingDirectory(command.workingDirectory);
+    HostProcess::configure(*process, command.program, command.arguments, command.workingDirectory);
     process->setProcessChannelMode(QProcess::ForwardedChannels);
 
     // A leftover stat file from an earlier session must not be re-read.
     if (!command.statSession.statFile.isEmpty())
         QFile::remove(command.statSession.statFile);
 
-    auto *timer = new QElapsedTimer();
-    timer->start();
+    QElapsedTimer timer;
+    timer.start();
     const int gameFileId = request.gameFileId;
     const int sourcePortId = request.sourcePortId;
     const StatSession statSession = command.statSession;
 
     connect(process, &QProcess::finished, this,
-            [this, process, timer, gameFileId, sourcePortId, statSession](int, QProcess::ExitStatus) {
-                const int minutes = int(timer->elapsed() / 60000);
-                delete timer;
+            [this, process, timer, gameFileId, sourcePortId, statSession](int exitCode, QProcess::ExitStatus status) {
+                const int minutes = int(timer.elapsed() / 60000);
                 process->deleteLater();
                 --m_activeSessions;
+                if (status != QProcess::NormalExit || exitCode != 0) {
+                    Q_EMIT launchFailed(tr("Source port command failed (exit %1).").arg(exitCode));
+                    Q_EMIT processExited(gameFileId, minutes);
+                    return;
+                }
 
                 collectStatistics(statSession, gameFileId, sourcePortId);
 
@@ -497,6 +510,7 @@ QString GameLauncher::launch(const LaunchRequest &request)
     process->start();
     if (!process->waitForStarted(5000)) {
         --m_activeSessions;
+
         const QString errorText = tr("Failed to start %1: %2")
                                       .arg(command.program, process->errorString());
         process->deleteLater();
