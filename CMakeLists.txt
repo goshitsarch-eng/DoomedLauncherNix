@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(DoomedLauncher VERSION 4.0.2 LANGUAGES CXX)
+project(DoomedLauncher VERSION 4.0.3 LANGUAGES CXX)
 
 set(QT_MIN_VERSION "6.8.0")
 set(KF_MIN_VERSION "6.6.0")

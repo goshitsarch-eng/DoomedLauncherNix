@@ -340,7 +340,7 @@ int Database::insertSourcePort(const QVariantMap &fields)
     query.addBindValue(fields.value(QStringLiteral("Executable")));
     query.addBindValue(fields.value(QStringLiteral("SupportedExtensions"),
                                     QStringLiteral(".wad,.deh,.bex,.pk3,.pk7,.ipk3,.zip")));
-    query.addBindValue(fields.value(QStringLiteral("Directory"), QString()));
+    query.addBindValue(fields.value(QStringLiteral("Directory"), QStringLiteral("")));
     query.addBindValue(fields.value(QStringLiteral("SettingsFiles"), QString()));
     query.addBindValue(fields.value(QStringLiteral("LaunchType"), 0));
     query.addBindValue(fields.value(QStringLiteral("FileOption"), QStringLiteral("-file")));

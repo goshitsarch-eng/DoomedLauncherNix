@@ -9,17 +9,26 @@ Kirigami.Page {
     title: i18n("Library")
     padding: 0
 
-    property int currentTabIndex: Math.min(Launcher.lastTabIndex, tabRepeater.count > 0 ? tabRepeater.count - 1 : 0)
-    property var currentTab: Launcher.tabs.length > currentTabIndex ? Launcher.tabs[currentTabIndex] : null
+    property int currentTabIndex: Math.max(0, Math.min(Launcher.lastTabIndex, Launcher.tabs.length - 1))
+    property var currentTab: currentTabIndex >= 0 && Launcher.tabs.length > currentTabIndex ? Launcher.tabs[currentTabIndex] : null
     property bool isIdGamesTab: currentTab !== null && currentTab.kind === 4
     property int selectedGameFileId: -1
     property var selectedIds: []
     property string searchText: ""
+    property bool showingDetails: false
+
+    function clearSelection() {
+        fileList.currentIndex = -1
+        selectedGameFileId = -1
+        selectedIds = []
+        detailsPanel.currentFile = null
+    }
 
     function reload() {
         if (!currentTab)
             return
         if (isIdGamesTab) {
+            Launcher.library.load(currentTab.kind, currentTab.tagId, searchText)
             if (searchText.length >= 3)
                 Launcher.idGames.search("title", searchText)
             else
@@ -34,7 +43,7 @@ Kirigami.Page {
         const item = Launcher.library.get(row)
         selectedGameFileId = item.GameFileID !== undefined ? item.GameFileID : -1
         selectedIds = [selectedGameFileId]
-        detailsPanel.currentFile = item
+        detailsPanel.currentFile = selectedGameFileId >= 0 ? item : null
     }
 
     function playSelected(forceDialog) {
@@ -47,7 +56,7 @@ Kirigami.Page {
             return
         }
         if (forceDialog || Launcher.showPlayDialog) {
-            playDialog.open(selectedGameFileId)
+            playDialog.openFor(selectedGameFileId)
         } else {
             const error = Launcher.playWithDefaults(selectedGameFileId)
             if (error !== "")
@@ -57,8 +66,20 @@ Kirigami.Page {
 
     Connections {
         target: Launcher
-        function onLibraryChanged() { page.reload() }
-        function onTabsChanged() { page.reload() }
+        function onLibraryChanged() { if (!page.isIdGamesTab) page.reload() }
+        function onTabsChanged() {
+            page.currentTabIndex = Math.max(0, Math.min(page.currentTabIndex, Launcher.tabs.length - 1))
+            page.clearSelection()
+            page.reload()
+        }
+    }
+
+    Connections {
+        target: Launcher.library
+        function onModelReset() {
+            const row = Launcher.library.rowForGameFileId(page.selectedGameFileId)
+            page.selectRow(row)
+        }
     }
 
     Connections {
@@ -107,6 +128,12 @@ Kirigami.Page {
             onTriggered: page.playSelected(true)
         },
         Kirigami.Action {
+            text: page.showingDetails ? i18n("Hide Details") : i18n("Show Details")
+            icon.name: "document-properties"
+            visible: !applicationWindow().wideScreen
+            onTriggered: page.showingDetails = !page.showingDetails
+        },
+        Kirigami.Action {
             id: viewToggle
             text: Launcher.tileView ? i18n("List View") : i18n("Tile View")
             icon.name: Launcher.tileView ? "view-list-details" : "view-preview"
@@ -152,6 +179,7 @@ Kirigami.Page {
             Layout.fillWidth: true
             currentIndex: page.currentTabIndex
             onCurrentIndexChanged: {
+                page.clearSelection()
                 page.currentTabIndex = currentIndex
                 Launcher.lastTabIndex = currentIndex
                 page.reload()
@@ -175,6 +203,7 @@ Kirigami.Page {
 
             // Main file view (list or tiles)
             Item {
+                visible: applicationWindow().wideScreen || !page.showingDetails
                 Layout.fillWidth: true
                 Layout.fillHeight: true
 
@@ -319,13 +348,15 @@ Kirigami.Page {
 
             Kirigami.Separator {
                 Layout.fillHeight: true
+                visible: applicationWindow().wideScreen
             }
 
             DetailsPanel {
                 id: detailsPanel
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 20
                 Layout.fillHeight: true
-                visible: applicationWindow().wideScreen
+                Layout.fillWidth: !applicationWindow().wideScreen
+                visible: applicationWindow().wideScreen || page.showingDetails
                 isIdGames: page.isIdGamesTab
             }
         }
@@ -362,7 +393,7 @@ Kirigami.Page {
             text: i18n("Edit…")
             icon.name: "document-edit"
             enabled: !page.isIdGamesTab
-            onTriggered: editDialog.open(page.selectedGameFileId)
+            onTriggered: editDialog.openFor(page.selectedGameFileId)
         }
         QQC2.MenuItem {
             text: i18n("Resync")
@@ -374,7 +405,10 @@ Kirigami.Page {
             text: i18n("Rename…")
             icon.name: "edit-rename"
             enabled: !page.isIdGamesTab
-            onTriggered: renamePrompt.open()
+            onTriggered: {
+                renameField.text = Launcher.library.get(fileList.currentIndex).FileName
+                renamePrompt.open()
+            }
         }
         QQC2.MenuItem {
             text: i18n("Delete…")

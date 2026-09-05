@@ -6,6 +6,31 @@ added by this fork; upstream's own release notes follow further down, unchanged.
 
 Fork versions are numbered separately from upstream releases.
 
+## 4.0.3
+
+- Add, remove and reorder additional mods from the Play dialog; retain their
+  remembered load order. Report missing mods and unsupported archive contents.
+- Keep library selection and details attached to the correct entry after sorting,
+  searching and deleting. Offer details on narrow windows and handle removed tabs.
+- Apply edited tags only when Save is pressed. Decode executable picker URLs so
+  paths containing spaces and non-ASCII characters work.
+- Allow Add IWADs to promote an existing mod; repair default selections after
+  deletion and update remembered mod lists and IWAD filenames after renaming.
+- Isolate extracted archive members so identically named WADs cannot overwrite
+  one another. Keep online archive IDs separate from local artwork and IWAD IDs.
+- Cancel stale idgames searches, report malformed/API error responses, stream
+  downloads into isolated temporary folders and reject invalid download paths.
+  Serialize downloads and clear pending autoplay after failures.
+- Reflect source-port detection state across pages and refresh setup after manual
+  source-port changes. Prevent mirror country labels being saved as URLs.
+- Build and test on native x64 and ARM64 GitHub runners. Publish binary tar.gz
+  archives, Flatpak bundles and SHA-256 checksums automatically for each new
+  version pushed to development (or a matching v-prefixed tag).
+
+The tar.gz packages contain the executable and desktop integration files. They
+require a compatible host Qt/KDE installation (the binaries are built with the
+KDE 6.10 SDK); use Flatpak when those runtime libraries are not installed.
+
 ## 4.0.2
 
 - Restore Flatpak host detection and launch for native/AppImage, Flatpak and

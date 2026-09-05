@@ -12,10 +12,8 @@ Kirigami.ScrollablePage {
         Kirigami.Action {
             text: i18n("Detect Installed Ports")
             icon.name: "system-search"
-            onTriggered: {
-                detectBusy.running = true
-                Launcher.detectSourcePorts()
-            }
+            enabled: !Launcher.detecting
+            onTriggered: Launcher.detectSourcePorts()
         },
         Kirigami.Action {
             text: i18n("Add Manually…")
@@ -27,7 +25,6 @@ Kirigami.ScrollablePage {
     Connections {
         target: Launcher
         function onDetectFinished(added) {
-            detectBusy.running = false
             applicationWindow().showPassiveNotification(
                 added > 0 ? i18n("Added %1 detected source port(s)", added)
                           : i18n("No new source ports found"))
@@ -42,7 +39,7 @@ Kirigami.ScrollablePage {
             width: portsList.width
             QQC2.BusyIndicator {
                 id: detectBusy
-                running: false
+                running: Launcher.detecting
                 visible: running
                 Layout.alignment: Qt.AlignHCenter
             }

@@ -68,4 +68,5 @@ private:
     int m_lastTabKind = Local;
     int m_lastTagId = -1;
     QString m_lastSearch;
+    bool m_externalRows = false;
 };

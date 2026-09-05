@@ -2,6 +2,8 @@
 
 #include "database.h"
 #include "launcherpaths.h"
+#include "managedpath.h"
+#include "externalurl.h"
 
 #include <QFile>
 #include <QJsonArray>
@@ -9,6 +11,8 @@
 #include <QJsonObject>
 #include <QNetworkReply>
 #include <QUrl>
+#include <QTemporaryDir>
+#include <memory>
 
 IdGamesClient::IdGamesClient(Database *db, QObject *parent)
     : QObject(parent)
@@ -42,17 +46,38 @@ void IdGamesClient::request(const QString &query)
     const QString apiPage = m_db->configValue(QStringLiteral("ApiPage"), QStringLiteral("api/api.php"));
     const QUrl url(base + apiPage + QStringLiteral("?") + query + QStringLiteral("&out=json"));
 
+    if (m_searchReply) {
+        auto previous = m_searchReply;
+        m_searchReply = nullptr;
+        previous->abort();
+    }
     setBusy(true);
-    QNetworkReply *reply = m_network.get(QNetworkRequest(url));
+    QNetworkRequest networkRequest(url);
+    networkRequest.setTransferTimeout(30000);
+    QNetworkReply *reply = m_network.get(networkRequest);
+    m_searchReply = reply;
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         reply->deleteLater();
+        if (m_searchReply != reply)
+            return;
+        m_searchReply = nullptr;
         setBusy(false);
         if (reply->error() != QNetworkReply::NoError) {
             Q_EMIT searchFailed(reply->errorString());
             return;
         }
 
-        const QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+        QJsonParseError parseError;
+        const QJsonDocument doc = QJsonDocument::fromJson(reply->readAll(), &parseError);
+        if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
+            Q_EMIT searchFailed(tr("The archive returned an invalid JSON response."));
+            return;
+        }
+        if (doc.object().contains(QStringLiteral("error"))) {
+            Q_EMIT searchFailed(doc.object().value(QStringLiteral("error")).toObject()
+                                    .value(QStringLiteral("message")).toString(tr("Archive request failed.")));
+            return;
+        }
         const QJsonObject content = doc.object().value(QStringLiteral("content")).toObject();
         QJsonArray fileArray;
         const QJsonValue fileValue = content.value(QStringLiteral("file"));
@@ -87,6 +112,22 @@ void IdGamesClient::request(const QString &query)
 
 void IdGamesClient::download(const QString &dir, const QString &fileName)
 {
+    if (m_downloading)
+        return;
+    if (!ManagedPath::isSafeFileName(fileName)) {
+        Q_EMIT downloadFailed(fileName, tr("Invalid download filename."));
+        return;
+    }
+    for (const QString &part : dir.split(QLatin1Char('/'), Qt::SkipEmptyParts)) {
+        if (!ManagedPath::isSafeFileName(part)) {
+            Q_EMIT downloadFailed(fileName, tr("Invalid archive directory."));
+            return;
+        }
+    }
+    if (dir.startsWith(QLatin1Char('/'))) {
+        Q_EMIT downloadFailed(fileName, tr("Invalid archive directory."));
+        return;
+    }
     QString mirror = m_db->configValue(QStringLiteral("MirrorUrl"),
                                        QStringLiteral("https://www.quaddicted.com/files/idgames/"));
     // Databases from old releases may still carry an ftp:// mirror;
@@ -99,32 +140,58 @@ void IdGamesClient::download(const QString &dir, const QString &fileName)
     if (!path.isEmpty() && !path.endsWith(QLatin1Char('/')))
         path += QLatin1Char('/');
 
-    const QUrl url(mirror + path + fileName);
+    QUrl url = ExternalUrl::fromHttpInput(mirror);
+    if (url.isEmpty()) {
+        Q_EMIT downloadFailed(fileName, tr("The mirror must be an HTTP or HTTPS URL."));
+        return;
+    }
+    url.setPath(url.path() + path + fileName);
+    LauncherPaths::ensureLayout();
+    auto temporary = std::make_shared<QTemporaryDir>(LauncherPaths::tempDir() + QStringLiteral("/download-XXXXXX"));
+    auto file = std::make_shared<QFile>(temporary->filePath(fileName));
+    if (!temporary->isValid() || !file->open(QIODevice::WriteOnly)) {
+        Q_EMIT downloadFailed(fileName, tr("Cannot create the download file."));
+        return;
+    }
     QNetworkRequest networkRequest(url);
+    networkRequest.setTransferTimeout(30000);
     networkRequest.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                                 QNetworkRequest::NoLessSafeRedirectPolicy);
     QNetworkReply *reply = m_network.get(networkRequest);
+    m_downloading = true;
+    Q_EMIT downloadingChanged();
+    auto writeFailed = std::make_shared<bool>(false);
+    connect(reply, &QIODevice::readyRead, this, [reply, file, writeFailed]() {
+        const QByteArray data = reply->readAll();
+        if (file->write(data) != data.size()) {
+            *writeFailed = true;
+            reply->abort();
+        }
+    });
 
     connect(reply, &QNetworkReply::downloadProgress, this,
             [this, fileName](qint64 received, qint64 total) {
                 Q_EMIT downloadProgress(fileName, received, total);
             });
-    connect(reply, &QNetworkReply::finished, this, [this, reply, fileName]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, fileName, file, temporary, writeFailed]() {
         reply->deleteLater();
+        m_downloading = false;
+        Q_EMIT downloadingChanged();
+        if (*writeFailed) {
+            Q_EMIT downloadFailed(fileName, tr("Cannot write the download: %1").arg(file->errorString()));
+            return;
+        }
         if (reply->error() != QNetworkReply::NoError) {
             Q_EMIT downloadFailed(fileName, reply->errorString());
             return;
         }
-        LauncherPaths::ensureLayout();
-        const QString localPath = LauncherPaths::tempDir() + QLatin1Char('/') + fileName;
-        QFile file(localPath);
-        if (!file.open(QIODevice::WriteOnly)) {
-            Q_EMIT downloadFailed(fileName, tr("Cannot write %1").arg(localPath));
+        const QByteArray remaining = reply->readAll();
+        if (file->write(remaining) != remaining.size() || !file->flush()) {
+            Q_EMIT downloadFailed(fileName, tr("Cannot finish writing the download."));
             return;
         }
-        file.write(reply->readAll());
-        file.close();
-        Q_EMIT downloadFinished(fileName, localPath);
+        file->close();
+        Q_EMIT downloadFinished(fileName, file->fileName());
     });
 }
 

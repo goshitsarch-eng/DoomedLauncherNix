@@ -36,6 +36,9 @@
   <!-- The upstream project this is forked from. -->
   <url type="help">https://github.com/nstlaurent/DoomLauncher</url>
   <releases>
+    <release version="4.0.3" date="2026-09-05">
+      <description><p>Repair library selection, mod load lists, IWAD imports, tag editing and archive downloads. Add tested x64 and ARM64 tar.gz and Flatpak releases.</p></description>
+    </release>
     <release version="4.0.2" date="2026-09-05">
       <description><p>Restore source-port detection and launch across the Flatpak host boundary, with typed arguments, host working directories and failure handling.</p></description>
     </release>

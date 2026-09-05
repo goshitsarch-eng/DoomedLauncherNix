@@ -130,7 +130,13 @@ QStringList GameLauncher::gameFileLaunchPaths(const QVariantMap &gameFile, const
         const QString extracted = ArchiveReader::extract(path, entry.name, LauncherPaths::tempDir());
         if (!extracted.isEmpty())
             result.append(extracted);
+        else {
+            *error = tr("Failed to extract %1 from %2.").arg(entry.name, path);
+            return {};
+        }
     }
+    if (result.isEmpty())
+        *error = tr("No files supported by this source port were found in %1.").arg(path);
     return result;
 }
 
@@ -235,6 +241,10 @@ GameLauncher::BuiltCommand GameLauncher::build(const LaunchRequest &request)
         const QVariantMap iwad = m_db->iwadById(request.iwadId);
         const int iwadGameFileId = iwad.value(QStringLiteral("GameFileID")).toInt();
         const QVariantMap iwadGameFile = m_db->gameFileById(iwadGameFileId);
+        if (iwadGameFile.isEmpty()) {
+            command.error = tr("The selected IWAD is no longer in the library.");
+            return command;
+        }
         if (!iwadGameFile.isEmpty()) {
             const QString iwadPath = extractIwad(iwadGameFile, sourcePort, &error);
             if (iwadPath.isEmpty()) {
@@ -257,8 +267,11 @@ GameLauncher::BuiltCommand GameLauncher::build(const LaunchRequest &request)
     QList<QVariantMap> files;
     for (const QString &fileName : request.additionalFiles) {
         const QVariantMap file = m_db->gameFileByName(fileName);
-        if (!file.isEmpty())
-            files.append(file);
+        if (file.isEmpty()) {
+            command.error = tr("Additional file %1 is no longer in the library.").arg(fileName);
+            return command;
+        }
+        files.append(file);
     }
     if (!request.isIwadLaunch)
         files.append(gameFile);

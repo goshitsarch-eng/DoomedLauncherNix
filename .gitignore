@@ -336,3 +336,10 @@ ReleaseBuild/
 # Flatpak build artifacts
 /build-dir/
 /.flatpak-builder/
+
+# Qt/Flatpak builds and release packages
+/build*/
+/.flatpak-builder/
+/repo/
+/dist/
+/release-notes.md

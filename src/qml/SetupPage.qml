@@ -13,7 +13,6 @@ Kirigami.ScrollablePage {
     Connections {
         target: Launcher
         function onDetectFinished(added) {
-            detectBusy.running = false
             detectResult.text = added > 0
                 ? i18n("Added %1 source port(s).", added)
                 : i18n("No new source ports found. Install GZDoom (native, Flatpak or snap) and detect again, or add one manually.")
@@ -69,14 +68,12 @@ Kirigami.ScrollablePage {
                     QQC2.Button {
                         text: i18n("Detect Installed Ports")
                         icon.name: "system-search"
-                        onClicked: {
-                            detectBusy.running = true
-                            Launcher.detectSourcePorts()
-                        }
+                        enabled: !Launcher.detecting
+                        onClicked: Launcher.detectSourcePorts()
                     }
                     QQC2.BusyIndicator {
                         id: detectBusy
-                        running: false
+                        running: Launcher.detecting
                         visible: running
                     }
                 }

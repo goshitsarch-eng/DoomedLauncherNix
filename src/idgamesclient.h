@@ -2,6 +2,7 @@
 
 #include <QNetworkAccessManager>
 #include <QObject>
+#include <QPointer>
 #include <QVariantList>
 
 class Database;
@@ -12,11 +13,13 @@ class IdGamesClient : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
+    Q_PROPERTY(bool downloading READ downloading NOTIFY downloadingChanged)
 
 public:
     explicit IdGamesClient(Database *db, QObject *parent = nullptr);
 
     bool busy() const { return m_busy; }
+    bool downloading() const { return m_downloading; }
 
     // type: "title", "author", "filename" or "descrption" (sic — the API's
     // own spelling).
@@ -33,6 +36,7 @@ public:
 
 Q_SIGNALS:
     void busyChanged();
+    void downloadingChanged();
     void searchFinished(const QVariantList &results);
     void searchFailed(const QString &message);
     void downloadProgress(const QString &fileName, qint64 received, qint64 total);
@@ -46,4 +50,6 @@ private:
     Database *m_db;
     QNetworkAccessManager m_network;
     bool m_busy = false;
+    bool m_downloading = false;
+    QPointer<QNetworkReply> m_searchReply;
 };

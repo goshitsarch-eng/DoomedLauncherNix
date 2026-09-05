@@ -15,19 +15,21 @@ Kirigami.Dialog {
     property var fileTags: []
     property var allTags: []
 
-    function open(fileId) {
+    function openFor(fileId) {
         gameFileId = fileId
         const file = Launcher.gameFile(fileId)
-        titleField.text = file.Title !== undefined ? String(file.Title) : ""
-        authorField.text = file.Author !== undefined ? String(file.Author) : ""
+        titleField.text = file.Title ? String(file.Title) : ""
+        authorField.text = file.Author ? String(file.Author) : ""
         ratingSpin.value = file.Rating !== undefined && file.Rating !== null ? Number(file.Rating) : 0
-        commentsArea.text = file.Comments !== undefined ? String(file.Comments) : ""
+        commentsArea.text = file.Comments ? String(file.Comments) : ""
         allTags = Launcher.tagEntries()
         fileTags = Launcher.tagsOfGameFile(fileId)
-        visible = true
+        open()
     }
 
     onAccepted: {
+        for (const tag of allTags)
+            Launcher.setGameFileTag(gameFileId, tag.tagId, fileTags.indexOf(tag.tagId) !== -1)
         Launcher.updateGameFile(gameFileId, {
             Title: titleField.text,
             Author: authorField.text,
@@ -72,7 +74,12 @@ Kirigami.Dialog {
                 required property var modelData
                 text: modelData.name
                 checked: dialog.fileTags.indexOf(modelData.tagId) !== -1
-                onToggled: Launcher.setGameFileTag(dialog.gameFileId, modelData.tagId, checked)
+                onToggled: {
+                    const tags = dialog.fileTags.filter(id => id !== modelData.tagId)
+                    if (checked)
+                        tags.push(modelData.tagId)
+                    dialog.fileTags = tags
+                }
             }
         }
     }

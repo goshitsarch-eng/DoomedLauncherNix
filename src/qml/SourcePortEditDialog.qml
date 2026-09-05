@@ -104,7 +104,7 @@ Kirigami.Dialog {
         id: executablePicker
         title: i18n("Select Executable")
         onAccepted: {
-            const path = selectedFile.toString().replace("file://", "")
+            const path = Launcher.localFilePath(selectedFile)
             executableField.text = path
             const slash = path.lastIndexOf("/")
             if (slash > 0)

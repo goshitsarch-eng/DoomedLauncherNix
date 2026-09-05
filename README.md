@@ -4,7 +4,7 @@ A Doom frontend and WAD library for Linux, built with **Qt 6** and **KDE
 Kirigami** so it looks and feels like a modern KDE application — with
 light, dark and follow-system color schemes.
 
-Current release: **4.0.2**.
+Current release: **4.0.3**.
 
 > DoomedLauncherNix is a Linux-focused fork of
 > [Doom Launcher](https://github.com/nstlaurent/DoomLauncher) by
@@ -45,6 +45,58 @@ Current release: **4.0.2**.
   locations mounted via KIO (smb://, sftp:// …) open directly — no
   "open with another app" detour
 
+## Downloads and automatic releases
+
+Download the package for your architecture from
+[GitHub Releases](https://github.com/goshitsarch-eng/DoomedLauncherNix/releases).
+Every new release includes:
+
+| CPU | Native binary archive | Flatpak bundle |
+| --- | --- | --- |
+| x64 | `DoomedLauncherNix-VERSION-linux-x86_64.tar.gz` | `DoomedLauncherNix-VERSION-x86_64.flatpak` |
+| ARM64 | `DoomedLauncherNix-VERSION-linux-aarch64.tar.gz` | `DoomedLauncherNix-VERSION-aarch64.flatpak` |
+
+Install a downloaded Flatpak with `flatpak install --user ./PACKAGE.flatpak`.
+The bundle references Flathub for its KDE runtime. The native tar.gz contains
+`bin/` and `share/`; extract it and run `./bin/doomedlauncher`. It requires host
+Qt/KDE runtime libraries compatible with the KDE 6.10 SDK, including Kirigami,
+qqc2-desktop-style and the SQLite driver. It is not a self-contained bundle.
+Use Flatpak on systems with older Qt/KDE libraries. Verify downloads with the
+included `SHA256SUMS-ARCH.txt` file: `sha256sum --check SHA256SUMS-ARCH.txt`.
+
+The `Build, test and release` GitHub workflow runs on pushes and pull requests.
+Both architectures build natively and must pass CTest before publication. To
+publish the next version, update CMake, README, AppStream and release notes, then
+push to `development`. The workflow creates `vVERSION` and a GitHub release with
+all four packages. A matching `vVERSION` tag also triggers publication. Existing
+releases are left intact; ordinary pushes still build but do not replace assets.
+`python3 scripts/release_metadata.py` checks version consistency locally.
+
+## Using the repaired controls
+
+- In **Play with Options**, choose library mods under **Additional files**, then
+  Add, Remove or Move up to arrange them. Additional mods load in listed order,
+  before the selected entry. **Remember these settings** preserves that order.
+- Use **Show Details** to reach screenshots, saves and statistics in a narrow
+  window. Selection remains attached to the same file when sorting; filtering
+  a selected file out clears its selection.
+- **Add IWADs** also works when the file already exists in the mod library.
+- Changes to tags in **Edit File** are applied with Save; Cancel discards them.
+- One idgames download runs at a time. Failed downloads do not leave a pending
+  request to launch an unrelated later download.
+
+## Scope and remaining limitations
+
+This review covers the Qt library, play options, imports, tags, settings and
+idgames paths. Older database tables do not imply complete upstream feature
+parity: utility launching and game-profile editing still have no Qt interface.
+The store scanner records a Doom 64 re-release executable, but the standard
+Doom source-port picker does not launch that separate engine type. Demo and save
+associations currently open with the desktop application; selecting them does
+not replay a demo or load a particular save through the launcher. Source-port
+specific game rendering and physical desktop/portal behavior require testing
+with those engines on a real system.
+
 ## Existing libraries keep working
 
 The launcher uses the same SQLite database and data layout as previous
@@ -71,7 +123,7 @@ doomedlauncher
 
 Use `-DBUILD_TESTING=OFF` only when producing a minimal package without the
 Qt Test development module. `doomedlauncher --version` reports the same
-4.0.2 version recorded in CMake and AppStream metadata.
+4.0.3 version recorded in CMake and AppStream metadata.
 
 ### Flatpak
 

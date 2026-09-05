@@ -18,15 +18,13 @@ Kirigami.ScrollablePage {
             applicationWindow().showPassiveNotification(i18n("Search failed: %1", message))
         }
         function onDownloadProgress(fileName, received, total) {
-            downloadBar.visible = total > 0 && received < total
+            downloadBar.indeterminate = total <= 0
             if (total > 0)
                 downloadBar.value = received / total
         }
         function onDownloadFinished(fileName, localPath) {
-            downloadBar.visible = false
         }
         function onDownloadFailed(fileName, message) {
-            downloadBar.visible = false
         }
     }
 
@@ -62,7 +60,7 @@ Kirigami.ScrollablePage {
             Layout.fillWidth: true
             Layout.leftMargin: Kirigami.Units.largeSpacing
             Layout.rightMargin: Kirigami.Units.largeSpacing
-            visible: false
+            visible: Launcher.idGames.downloading
             from: 0
             to: 1
         }
@@ -105,12 +103,14 @@ Kirigami.ScrollablePage {
                 }
                 QQC2.ToolButton {
                     icon.name: "download"
+                    enabled: !Launcher.idGames.downloading
                     QQC2.ToolTip.text: i18n("Download and import")
                     QQC2.ToolTip.visible: hovered
                     onClicked: Launcher.downloadIdGamesFile(modelData, false)
                 }
                 QQC2.ToolButton {
                     icon.name: "media-playback-start"
+                    enabled: !Launcher.idGames.downloading
                     QQC2.ToolTip.text: i18n("Download and play")
                     QQC2.ToolTip.visible: hovered
                     onClicked: Launcher.downloadIdGamesFile(modelData, true)

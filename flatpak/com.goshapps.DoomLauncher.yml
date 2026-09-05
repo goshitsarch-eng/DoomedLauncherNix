@@ -18,6 +18,11 @@ modules:
     buildsystem: cmake-ninja
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_TESTING=ON
+    run-tests: true
+    test-rule: ""
+    test-commands:
+      - QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software ctest --output-on-failure
     sources:
       - type: dir
         path: ..

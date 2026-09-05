@@ -12,6 +12,7 @@
 #include <QFileInfo>
 #include <QImage>
 #include <QRegularExpression>
+#include <QSqlQuery>
 #include <QUuid>
 
 namespace
@@ -87,21 +88,19 @@ LibraryOps::AddResult LibraryOps::addFiles(const QStringList &paths, bool asIwad
         const QString destPath = LauncherPaths::gameFilesDir() + QLatin1Char('/') + storedName;
         if (sourceInfo.absoluteFilePath() != QFileInfo(destPath).absoluteFilePath()) {
             if (QFileInfo::exists(destPath) && !m_db->gameFileByName(storedName).isEmpty()) {
-                // Already in the library; resync instead of duplicating.
-                const QVariantMap existing = m_db->gameFileByName(storedName);
-                resync(existing.value(QStringLiteral("GameFileID")).toInt());
-                result.added.append(storedName);
-                continue;
-            }
-            // Never replace an untracked file in managed storage merely
-            // because an import happens to use the same base name.
-            if (QFileInfo::exists(destPath)) {
-                result.failed.append(sourcePath);
-                continue;
-            }
-            if (!QFile::copy(sourceInfo.absoluteFilePath(), destPath)) {
-                result.failed.append(sourcePath);
-                continue;
+                // Keep the managed copy, but continue below so Add IWADs
+                // can promote a file that was previously imported as a mod.
+            } else {
+                // Never replace an untracked file in managed storage merely
+                // because an import happens to use the same base name.
+                if (QFileInfo::exists(destPath)) {
+                    result.failed.append(sourcePath);
+                    continue;
+                }
+                if (!QFile::copy(sourceInfo.absoluteFilePath(), destPath)) {
+                    result.failed.append(sourcePath);
+                    continue;
+                }
             }
         }
 
@@ -283,6 +282,25 @@ QString LibraryOps::renameGameFile(int gameFileId, const QString &newName)
         return tr("Failed to rename %1.").arg(oldName);
 
     m_db->updateGameFile(gameFileId, {{QStringLiteral("FileName"), newName}});
+    // Remembered additional-file lists refer to names, not IDs.
+    for (const QVariant &value : m_db->gameFiles()) {
+        const QVariantMap file = value.toMap();
+        QStringList names = file.value(QStringLiteral("SettingsFiles")).toString()
+                                .split(QLatin1Char(';'), Qt::SkipEmptyParts);
+        if (names.contains(oldName)) {
+            for (QString &name : names) {
+                if (name == oldName)
+                    name = newName;
+            }
+            m_db->updateGameFile(file.value(QStringLiteral("GameFileID")).toInt(),
+                                {{QStringLiteral("SettingsFiles"), names.join(QLatin1Char(';'))}});
+        }
+    }
+    QSqlQuery iwad(m_db->db());
+    iwad.prepare(QStringLiteral("UPDATE IWads SET FileName = ? WHERE GameFileID = ?"));
+    iwad.addBindValue(newName);
+    iwad.addBindValue(gameFileId);
+    iwad.exec();
     return {};
 }
 

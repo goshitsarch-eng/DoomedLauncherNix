@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     // Files passed on the command line (desktop file %F / file manager
     // "Open with") are imported into the library on startup.
     QList<QUrl> filesToOpen;
-    const QStringList arguments = app.arguments().mid(1);
+    const QStringList arguments = parser.positionalArguments();
     for (const QString &argument : arguments) {
         if (!argument.startsWith(QLatin1Char('-')) && QFileInfo::exists(argument))
             filesToOpen.append(QUrl::fromLocalFile(QFileInfo(argument).absoluteFilePath()));

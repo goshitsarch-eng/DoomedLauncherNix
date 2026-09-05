@@ -27,6 +27,7 @@ class LauncherApp : public QObject
     Q_PROPERTY(bool tileView READ tileView WRITE setTileView NOTIFY configChanged)
     Q_PROPERTY(bool needsSetup READ needsSetup NOTIFY libraryChanged)
     Q_PROPERTY(int lastTabIndex READ lastTabIndex WRITE setLastTabIndex NOTIFY configChanged)
+    Q_PROPERTY(bool detecting READ detecting NOTIFY detectingChanged)
 
 public:
     explicit LauncherApp(QObject *parent = nullptr);
@@ -48,6 +49,8 @@ public:
     bool needsSetup() const;
     int lastTabIndex() const;
     void setLastTabIndex(int index);
+    bool detecting() const { return m_detecting; }
+    Q_INVOKABLE QString localFilePath(const QUrl &url) const;
 
     // Library operations ---------------------------------------------------
     Q_INVOKABLE void addFiles(const QList<QUrl> &urls, bool asIwads);
@@ -74,6 +77,7 @@ public:
 
     // Combo data ------------------------------------------------------------
     Q_INVOKABLE QVariantList iwadEntries() const;
+    Q_INVOKABLE QVariantList modEntries(int excludeGameFileId) const;
     Q_INVOKABLE QVariantList tagEntries() const;
     Q_INVOKABLE QVariantList tagsOfGameFile(int gameFileId) const;
     Q_INVOKABLE void setGameFileTag(int gameFileId, int tagId, bool enabled);
@@ -108,6 +112,7 @@ public:
 
 Q_SIGNALS:
     void tabsChanged();
+    void detectingChanged();
     void configChanged();
     void libraryChanged();
     void toast(const QString &message);
@@ -128,4 +133,5 @@ private:
     IdGamesClient *m_idGames = nullptr;
     ThemeManager *m_theme = nullptr;
     QString m_playAfterDownload;
+    bool m_detecting = false;
 };

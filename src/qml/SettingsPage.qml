@@ -48,7 +48,7 @@ Kirigami.ScrollablePage {
                     id: configRow
                     required property var modelData
                     // The theme row above already covers ColorThemeType.
-                    visible: modelData.Name !== "ColorThemeType"
+                    visible: ["ColorThemeType", "ShowPlayDialog", "GameFileViewType"].indexOf(modelData.Name) === -1
                     Kirigami.FormData.label: modelData.Name + ":"
                     Layout.fillWidth: true
 
@@ -56,7 +56,8 @@ Kirigami.ScrollablePage {
                         visible: String(configRow.modelData.AvailableValues) !== ""
                         Layout.fillWidth: true
                         model: String(configRow.modelData.AvailableValues)
-                            .split(";").filter(value => value !== "")
+                            .split(";").filter(value => value !== ""
+                                && (configRow.modelData.Name !== "MirrorUrl" || /^https?:\/\//i.test(value)))
                         Component.onCompleted: currentIndex =
                             Math.max(0, model.indexOf(String(configRow.modelData.Value)))
                         onActivated: Launcher.setConfigValue(configRow.modelData.Name, currentText)

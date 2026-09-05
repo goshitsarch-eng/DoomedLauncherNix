@@ -1,0 +1,103 @@
+name: Build, test and release
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check release metadata
+        id: version
+        shell: bash
+        run: |
+          version=$(python3 scripts/release_metadata.py)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo 'Tag does not match the project version' >&2
+            exit 1
+          fi
+      - name: Install Flatpak build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user --noninteractive flathub org.kde.Sdk//6.10 org.kde.Platform//6.10
+      - name: Build and test using the KDE SDK
+        run: |
+          flatpak-builder --user --force-clean --disable-rofiles-fuse --jobs=2 --repo=repo build-flatpak flatpak/com.goshapps.DoomLauncher.yml
+      - name: Package binary archive and Flatpak
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_ARCH: ${{ matrix.arch }}
+        run: |
+          mkdir -p dist
+          package="DoomedLauncherNix-${RELEASE_VERSION}-linux-${RELEASE_ARCH}"
+          mkdir -p "dist/$package"
+          cp -a build-flatpak/files/bin build-flatpak/files/share "dist/$package/"
+          rm -rf "dist/$package/share/runtime" "dist/$package/share/app-info"
+          cp README.md LICENSE RELEASENOTES.md "dist/$package/"
+          tar -C dist -czf "dist/$package.tar.gz" "$package"
+          rm -rf "dist/$package"
+          flatpak build-bundle --arch="$RELEASE_ARCH" --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo repo "dist/DoomedLauncherNix-${RELEASE_VERSION}-${RELEASE_ARCH}.flatpak" com.goshapps.DoomLauncher stable
+          cd dist
+          sha256sum *.tar.gz *.flatpak > "SHA256SUMS-${RELEASE_ARCH}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/development' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    concurrency:
+      group: publish-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: packages-*
+          path: dist
+          merge-multiple: true
+      - name: Publish the new version after both architectures pass
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          version=$(python3 scripts/release_metadata.py --notes release-notes.md)
+          tag="v$version"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; bump the project version to publish another."
+            exit 0
+          fi
+          test "$(find dist -name '*.tar.gz' | wc -l)" -eq 2
+          test "$(find dist -name '*.flatpak' | wc -l)" -eq 2
+          (cd dist && sha256sum --check SHA256SUMS-*.txt)
+          gh release create "$tag" dist/* --target "$GITHUB_SHA" --title "DoomedLauncherNix $version" --notes-file release-notes.md

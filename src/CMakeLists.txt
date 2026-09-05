@@ -1,5 +1,4 @@
-add_executable(doomedlauncher
-    main.cpp
+add_library(doomedlauncher_backend STATIC
     launcherpaths.cpp
     database.cpp
     archivereader.cpp
@@ -18,6 +17,9 @@ add_executable(doomedlauncher
     statsreader.cpp
     storescanner.cpp
 )
+
+add_executable(doomedlauncher main.cpp)
+target_link_libraries(doomedlauncher PRIVATE doomedlauncher_backend)
 
 qt_add_resources(doomedlauncher "palettes"
     PREFIX "/palettes"
@@ -56,7 +58,7 @@ qt_add_qml_module(doomedlauncher
     QML_FILES ${APP_QML_FILES}
 )
 
-target_link_libraries(doomedlauncher PRIVATE
+target_link_libraries(doomedlauncher_backend PUBLIC
     Qt6::Core
     Qt6::Gui
     Qt6::Qml
@@ -74,6 +76,6 @@ target_link_libraries(doomedlauncher PRIVATE
     KF6::IconThemes
 )
 
-target_include_directories(doomedlauncher PRIVATE ${CMAKE_BINARY_DIR}/generated)
+target_include_directories(doomedlauncher_backend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/generated)
 
 install(TARGETS doomedlauncher ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})

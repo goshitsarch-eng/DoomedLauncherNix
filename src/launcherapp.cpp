@@ -42,6 +42,10 @@ QString LauncherApp::initialize()
     m_idGames = new IdGamesClient(m_db, this);
     m_theme = new ThemeManager(m_db, this);
     m_theme->apply();
+    connect(m_sourcePorts, &SourcePortModel::countChanged, this, [this]() {
+        ensureDefaults();
+        Q_EMIT libraryChanged();
+    });
 
     connect(m_launcher, &GameLauncher::processExited, this, [this](int, int minutes) {
         Q_EMIT toast(tr("Play session finished (%1 min)").arg(minutes));
@@ -58,14 +62,18 @@ QString LauncherApp::initialize()
             [this](const QString &fileName, const QString &localPath) {
                 const LibraryOps::AddResult result = m_ops->addFiles({localPath}, false);
                 QFile::remove(localPath);
+                const bool playAfterImport = m_playAfterDownload == fileName;
+                m_playAfterDownload.clear();
                 Q_EMIT libraryChanged();
                 if (!result.added.isEmpty()) {
                     Q_EMIT toast(tr("Downloaded and imported %1").arg(fileName));
-                    if (m_playAfterDownload.compare(fileName, Qt::CaseInsensitive) == 0) {
-                        m_playAfterDownload.clear();
+                    if (playAfterImport) {
                         const QVariantMap file = m_db->gameFileByName(fileName);
-                        if (!file.isEmpty())
-                            playWithDefaults(file.value(QStringLiteral("GameFileID")).toInt());
+                        if (!file.isEmpty()) {
+                            const QString error = playWithDefaults(file.value(QStringLiteral("GameFileID")).toInt());
+                            if (!error.isEmpty())
+                                Q_EMIT toast(error);
+                        }
                     }
                 } else {
                     Q_EMIT toast(tr("Failed to import %1").arg(fileName));
@@ -73,6 +81,7 @@ QString LauncherApp::initialize()
             });
     connect(m_idGames, &IdGamesClient::downloadFailed, this,
             [this](const QString &fileName, const QString &message) {
+                m_playAfterDownload.clear();
                 Q_EMIT toast(tr("Download of %1 failed: %2").arg(fileName, message));
             });
 
@@ -159,6 +168,11 @@ void LauncherApp::setLastTabIndex(int index)
     m_db->setConfigValue(QStringLiteral("LastSelectedTabIndex"), QString::number(index));
 }
 
+QString LauncherApp::localFilePath(const QUrl &url) const
+{
+    return url.isLocalFile() ? url.toLocalFile() : QString();
+}
+
 // Library operations ---------------------------------------------------------
 
 void LauncherApp::addFiles(const QList<QUrl> &urls, bool asIwads)
@@ -215,6 +229,7 @@ void LauncherApp::deleteGameFiles(const QList<int> &gameFileIds, bool deleteMana
 {
     for (int id : gameFileIds)
         m_ops->deleteGameFile(id, deleteManagedFiles);
+    ensureDefaults();
     Q_EMIT libraryChanged();
 }
 
@@ -338,14 +353,21 @@ QVariantMap LauncherApp::playDefaults(int gameFileId) const
     int sourcePortId = file.value(QStringLiteral("SourcePortID"), -1).toInt();
     if (sourcePortId <= 0 || m_db->sourcePortById(sourcePortId).isEmpty())
         sourcePortId = m_db->configInt(QStringLiteral("DefaultSourcePort"), -1);
-    if (sourcePortId <= 0 && !m_db->sourcePorts(0).isEmpty())
+    if ((sourcePortId <= 0 || m_db->sourcePortById(sourcePortId).isEmpty()) && !m_db->sourcePorts(0).isEmpty())
         sourcePortId = m_db->sourcePorts(0).first().toMap()
                            .value(QStringLiteral("SourcePortID")).toInt();
     map.insert(QStringLiteral("sourcePortId"), sourcePortId);
 
     int iwadId = file.value(QStringLiteral("IWadID"), -1).toInt();
-    if (iwadId <= 0)
+    if (iwadId <= 0 || m_db->iwadById(iwadId).isEmpty())
         iwadId = m_db->configInt(QStringLiteral("DefaultIWad"), -1);
+    if ((iwadId <= 0 || m_db->iwadById(iwadId).isEmpty()) && !m_db->iwads().isEmpty())
+        iwadId = m_db->iwads().first().toMap().value(QStringLiteral("IWadID")).toInt();
+    for (const QVariant &value : m_db->iwads()) {
+        const QVariantMap iwad = value.toMap();
+        if (iwad.value(QStringLiteral("GameFileID")).toInt() == gameFileId)
+            iwadId = iwad.value(QStringLiteral("IWadID")).toInt();
+    }
     map.insert(QStringLiteral("iwadId"), iwadId);
 
     map.insert(QStringLiteral("map"), file.value(QStringLiteral("SettingsMap")).toString());
@@ -384,6 +406,19 @@ QVariantList LauncherApp::iwadEntries() const
         entry.insert(QStringLiteral("name"),
                      name.isEmpty() ? iwadRow.value(QStringLiteral("FileName")).toString() : name);
         result.append(entry);
+    }
+    return result;
+}
+
+QVariantList LauncherApp::modEntries(int excludeGameFileId) const
+{
+    QVariantList result;
+    const QList<int> iwads = m_db->iwadGameFileIds();
+    for (const QVariant &value : m_db->gameFiles()) {
+        const QVariantMap row = value.toMap();
+        const int id = row.value(QStringLiteral("GameFileID")).toInt();
+        if (id != excludeGameFileId && !iwads.contains(id))
+            result.append(row.value(QStringLiteral("FileName")));
     }
     return result;
 }
@@ -491,6 +526,10 @@ void LauncherApp::openAssociationFile(const QString &fileName, int fileType)
 
 void LauncherApp::detectSourcePorts()
 {
+    if (m_detecting)
+        return;
+    m_detecting = true;
+    Q_EMIT detectingChanged();
     auto future = QtConcurrent::run([] { return SourcePortDetector::detect(); });
     auto *watcher = new QFutureWatcher<QList<SourcePortDetector::DetectedPort>>(this);
     connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher]() {
@@ -517,6 +556,8 @@ void LauncherApp::detectSourcePorts()
         }
         ensureDefaults();
         m_sourcePorts->reload();
+        m_detecting = false;
+        Q_EMIT detectingChanged();
         Q_EMIT detectFinished(added);
         Q_EMIT libraryChanged();
     });
@@ -636,12 +677,15 @@ void LauncherApp::setConfigValue(const QString &name, const QString &value)
 
 void LauncherApp::downloadIdGamesFile(const QVariantMap &row, bool playWhenDone)
 {
+    if (m_idGames->downloading()) {
+        Q_EMIT toast(tr("Wait for the current download to finish."));
+        return;
+    }
     const QString dir = row.value(QStringLiteral("dir")).toString();
     const QString fileName = row.value(QStringLiteral("FileName")).toString();
     if (fileName.isEmpty())
         return;
-    if (playWhenDone)
-        m_playAfterDownload = fileName;
+    m_playAfterDownload = playWhenDone ? fileName : QString();
     Q_EMIT toast(tr("Downloading %1...").arg(fileName));
     m_idGames->download(dir, fileName);
 }

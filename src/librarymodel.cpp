@@ -6,6 +6,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
+#include <QUrl>
 
 #include <algorithm>
 
@@ -74,7 +75,7 @@ QVariant LibraryModel::data(const QModelIndex &index, int role) const
     case ImagePathRole:
         return imageForGameFile(row);
     case IsIwadRole:
-        return m_iwadIds.contains(row.value(QStringLiteral("GameFileID")).toInt());
+        return !m_externalRows && m_iwadIds.contains(row.value(QStringLiteral("GameFileID")).toInt());
     case CommentsRole:
         return row.value(QStringLiteral("Comments")).toString();
     case ReleaseDateRole:
@@ -86,6 +87,8 @@ QVariant LibraryModel::data(const QModelIndex &index, int role) const
 
 QString LibraryModel::imageForGameFile(const QVariantMap &row) const
 {
+    if (m_externalRows)
+        return {};
     const int id = row.value(QStringLiteral("GameFileID"), -1).toInt();
     if (id < 0)
         return {};
@@ -105,7 +108,7 @@ QString LibraryModel::imageForGameFile(const QVariantMap &row) const
             }
             const QString path = QDir::isAbsolutePath(name) ? name : base + QLatin1Char('/') + name;
             if (QFileInfo::exists(path))
-                return QStringLiteral("file://") + path;
+                return QUrl::fromLocalFile(path).toString();
         }
     }
     return {};
@@ -118,6 +121,7 @@ void LibraryModel::load(int tabKind, int tagId, const QString &searchText)
     m_lastSearch = searchText;
 
     beginResetModel();
+    m_externalRows = tabKind == IdGames;
     m_rows.clear();
     m_iwadIds = m_db->iwadGameFileIds();
 
@@ -194,7 +198,9 @@ void LibraryModel::load(int tabKind, int tagId, const QString &searchText)
 void LibraryModel::setExternalRows(const QVariantList &rows)
 {
     beginResetModel();
+    m_externalRows = true;
     m_rows = rows;
+    applySort();
     endResetModel();
     Q_EMIT countChanged();
 }

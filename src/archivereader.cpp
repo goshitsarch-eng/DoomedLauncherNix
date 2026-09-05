@@ -6,6 +6,9 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QCryptographicHash>
+#include <QSaveFile>
+#include "managedpath.h"
 
 namespace
 {
@@ -85,19 +88,25 @@ QString extract(const QString &filePath, const QString &entryName, const QString
         return {};
     }
 
-    QDir().mkpath(destDir);
-    // Flatten the path: entries inside sub-directories are written directly
-    // into destDir under their base name, matching the old Temp layout.
+    // Isolate each archive member. Two mods may both contain doom.wad,
+    // and a command preview must not overwrite another mod's extracted data.
     const QString baseName = entryName.section(QLatin1Char('/'), -1);
-    const QString target = destDir + QLatin1Char('/') + baseName;
-    QFile::remove(target);
-    QFile out(target);
+    if (!ManagedPath::isSafeFileName(baseName))
+        return {};
+    const QByteArray key = QFileInfo(filePath).absoluteFilePath().toUtf8() + '\0' + entryName.toUtf8();
+    const QString directory = destDir + QLatin1Char('/')
+        + QString::fromLatin1(QCryptographicHash::hash(key, QCryptographicHash::Sha256).toHex());
+    if (!QDir().mkpath(directory))
+        return {};
+    const QString target = directory + QLatin1Char('/') + baseName;
+    QSaveFile out(target);
     if (!out.open(QIODevice::WriteOnly)) {
         zip.close();
         return {};
     }
-    out.write(file->data());
-    out.close();
+    const QByteArray data = file->data();
+    if (out.write(data) != data.size() || !out.commit())
+        return {};
     zip.close();
     return target;
 }

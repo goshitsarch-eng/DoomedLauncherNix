@@ -31,10 +31,13 @@ Kirigami.Dialog {
         }
     ]
 
-    function open(fileId) {
+    property var availableMods: []
+
+    function openFor(fileId) {
         gameFileId = fileId
         const defaults = Launcher.playDefaults(fileId)
         iwads = Launcher.iwadEntries()
+        availableMods = Launcher.modEntries(fileId)
         maps = defaults.maps !== undefined ? defaults.maps : []
 
         const ports = Launcher.sourcePorts
@@ -58,7 +61,7 @@ Kirigami.Dialog {
         recordCheck.checked = false
         rememberCheck.checked = true
         additionalFiles = defaults.additionalFiles !== undefined ? defaults.additionalFiles : []
-        visible = true
+        open()
     }
 
     function collect() {
@@ -156,12 +159,50 @@ Kirigami.Dialog {
             checked: true
         }
 
-        QQC2.Label {
+        RowLayout {
             Kirigami.FormData.label: i18n("Additional files:")
-            visible: dialog.additionalFiles.length > 0
-            text: dialog.additionalFiles.join("\n")
-            wrapMode: Text.Wrap
             Layout.fillWidth: true
+            QQC2.ComboBox {
+                id: modCombo
+                model: dialog.availableMods
+                Layout.fillWidth: true
+            }
+            QQC2.Button {
+                text: i18n("Add")
+                enabled: modCombo.currentIndex >= 0 && dialog.additionalFiles.indexOf(modCombo.currentText) === -1
+                onClicked: dialog.additionalFiles = dialog.additionalFiles.concat([modCombo.currentText])
+            }
+        }
+
+        Repeater {
+            model: dialog.additionalFiles
+            delegate: RowLayout {
+                required property string modelData
+                required property int index
+                Layout.fillWidth: true
+                QQC2.Label {
+                    text: modelData
+                    elide: Text.ElideMiddle
+                    Layout.fillWidth: true
+                }
+                QQC2.ToolButton {
+                    text: i18n("Move up")
+                    icon.name: "go-up"
+                    enabled: index > 0
+                    onClicked: {
+                        const files = dialog.additionalFiles.slice()
+                        const previous = files[index - 1]
+                        files[index - 1] = files[index]
+                        files[index] = previous
+                        dialog.additionalFiles = files
+                    }
+                }
+                QQC2.ToolButton {
+                    text: i18n("Remove")
+                    icon.name: "list-remove"
+                    onClicked: dialog.additionalFiles = dialog.additionalFiles.filter((file, row) => row !== index)
+                }
+            }
         }
 
         QQC2.Label {
