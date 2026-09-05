@@ -1,4 +1,5 @@
 #include "sourceportdetector.h"
+#include "hostprocess.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -41,16 +42,15 @@ const KnownBinary knownFlatpaks[] = {
 
 QString runAndCapture(const QString &program, const QStringList &arguments)
 {
-    QProcess process;
-    process.start(program, arguments);
-    if (!process.waitForFinished(10000))
+    QByteArray output;
+    if (!HostProcess::capture(program, arguments, &output))
         return {};
-    return QString::fromUtf8(process.readAllStandardOutput());
+    return QString::fromUtf8(output);
 }
 
 QStringList extraSearchDirectories()
 {
-    const QString home = QDir::homePath();
+    const QString home = HostProcess::homePath();
     return {
         QStringLiteral("/usr/games"),
         QStringLiteral("/usr/local/games"),
@@ -93,6 +93,31 @@ namespace SourcePortDetector
 {
 QString findExecutable(const QString &name)
 {
+    if (HostProcess::isSandboxed()) {
+        if (QDir::isAbsolutePath(name))
+            return HostProcess::isExecutable(name) ? name : QString();
+        if (name.isEmpty() || name.contains(QLatin1Char('/')))
+            return {};
+        const QString hostPath = runAndCapture(QStringLiteral("/usr/bin/printenv"),
+                                               {QStringLiteral("PATH")}).trimmed();
+        const QStringList files = HostProcess::executableFiles(
+            hostPath.split(QLatin1Char(':'), Qt::SkipEmptyParts) + extraSearchDirectories());
+        for (const QString &file : files) {
+            if (QFileInfo(file).fileName() == name)
+                return file;
+        }
+        for (const QString &file : files) {
+            if (QFileInfo(file).fileName().compare(name, Qt::CaseInsensitive) == 0)
+                return file;
+        }
+        for (const QString &file : files) {
+            const QFileInfo info(file);
+            if (info.suffix() == QStringLiteral("AppImage")
+                && normalized(info.completeBaseName()).startsWith(normalized(name)))
+                return file;
+        }
+        return {};
+    }
     QString path = QStandardPaths::findExecutable(name);
     if (!path.isEmpty())
         return path;
@@ -146,7 +171,7 @@ QList<DetectedPort> detect()
                                                   QStringLiteral("--columns=application")});
     for (const KnownBinary &known : knownFlatpaks) {
         const QString appId = QString::fromLatin1(known.binary);
-        if (!flatpakList.contains(appId, Qt::CaseInsensitive))
+        if (!flatpakList.split(QLatin1Char('\n'), Qt::SkipEmptyParts).contains(appId))
             continue;
         DetectedPort port;
         port.name = QString::fromLatin1(known.name);

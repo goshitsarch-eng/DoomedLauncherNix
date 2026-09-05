@@ -5,6 +5,7 @@ add_executable(doomedlauncher
     archivereader.cpp
     wadparser.cpp
     sourceportdetector.cpp
+    hostprocess.cpp
     gamelauncher.cpp
     librarymodel.cpp
     sourceportmodel.cpp

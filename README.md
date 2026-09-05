@@ -4,7 +4,7 @@ A Doom frontend and WAD library for Linux, built with **Qt 6** and **KDE
 Kirigami** so it looks and feels like a modern KDE application — with
 light, dark and follow-system color schemes.
 
-Current release: **4.0.1**.
+Current release: **4.0.2**.
 
 > DoomedLauncherNix is a Linux-focused fork of
 > [Doom Launcher](https://github.com/nstlaurent/DoomLauncher) by
@@ -71,9 +71,22 @@ doomedlauncher
 
 Use `-DBUILD_TESTING=OFF` only when producing a minimal package without the
 Qt Test development module. `doomedlauncher --version` reports the same
-4.0.1 version recorded in CMake and AppStream metadata.
+4.0.2 version recorded in CMake and AppStream metadata.
 
 ### Flatpak
+
+Version 4.0.2 restores host source-port detection and launch in the Qt build.
+Native binaries/AppImages, sibling Flatpaks and Snaps use one typed
+`flatpak-spawn --host --watch-bus` boundary, with the working directory
+passed using `--directory=`. Detection reads the host PATH and executable
+files, not the SDK's `/usr`; arguments are never evaluated by a shell.
+The existing `org.freedesktop.Flatpak` permission is required; no additional
+permissions were added. Failed host commands are reported and detection
+timeouts terminate the bridge. Native installations still run directly.
+
+The `hostprocess_test` CTest regression uses a strict host-bridge fixture
+to exercise detection, launch argv, host-only paths, errors and timeouts.
+It is not a physical game/rendering test.
 
 ```bash
 flatpak-builder --user --install --force-clean build-flatpak flatpak/com.goshapps.DoomLauncher.yml

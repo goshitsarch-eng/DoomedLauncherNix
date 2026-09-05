@@ -36,6 +36,9 @@
   <!-- The upstream project this is forked from. -->
   <url type="help">https://github.com/nstlaurent/DoomLauncher</url>
   <releases>
+    <release version="4.0.2" date="2026-09-05">
+      <description><p>Restore source-port detection and launch across the Flatpak host boundary, with typed arguments, host working directories and failure handling.</p></description>
+    </release>
     <release version="4.0.1" date="2026-08-29">
       <description>
         <p>Complete rewrite as a native Qt 6 / Kirigami application:</p>

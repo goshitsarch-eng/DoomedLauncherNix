@@ -6,6 +6,14 @@ added by this fork; upstream's own release notes follow further down, unchanged.
 
 Fork versions are numbered separately from upstream releases.
 
+## 4.0.2
+
+- Restore Flatpak host detection and launch for native/AppImage, Flatpak and
+  Snap source ports with typed argv and host-context working directories.
+- Reuse the existing host-spawn permission; no shell strings or new permissions.
+- Reject invalid engine IDs, report host-command failures, and clean up failed
+  starts and timed-out probes. Add Qt regression coverage for the host boundary.
+
 ## 4.0.1
 
 ### Complete rewrite in Qt 6 / Kirigami
