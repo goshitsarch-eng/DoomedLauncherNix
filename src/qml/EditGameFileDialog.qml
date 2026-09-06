@@ -6,6 +6,7 @@ import org.kde.kirigami as Kirigami
 // Edits the library metadata of one game file, including its tags.
 Kirigami.Dialog {
     id: dialog
+    objectName: "editDialog"
 
     title: i18n("Edit File")
     preferredWidth: Kirigami.Units.gridUnit * 26

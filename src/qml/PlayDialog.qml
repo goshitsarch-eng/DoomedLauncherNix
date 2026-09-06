@@ -7,6 +7,7 @@ import org.kde.kirigami as Kirigami
 // parameters and additional files, with a live command preview.
 Kirigami.Dialog {
     id: dialog
+    objectName: "playDialog"
 
     title: i18n("Play")
     preferredWidth: Kirigami.Units.gridUnit * 28

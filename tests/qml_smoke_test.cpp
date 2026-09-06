@@ -1,8 +1,10 @@
 #include "database.h"
 #include "launcherapp.h"
 #include "librarymodel.h"
+#include "sourceportmodel.h"
 #include <KAboutData>
 #include <KLocalizedContext>
+#include <KLocalizedString>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQmlExpression>
@@ -19,6 +21,7 @@ private Q_SLOTS:
         QTemporaryDir temporary;
         QVERIFY(temporary.isValid());
         qputenv("XDG_DATA_HOME", temporary.path().toUtf8());
+        KLocalizedString::setApplicationDomain("doomedlauncher");
         QQuickStyle::setStyle(QStringLiteral("Basic"));
         LauncherApp launcher;
         QVERIFY(launcher.initialize().isEmpty());
@@ -31,6 +34,7 @@ private Q_SLOTS:
         const int mod = database->insertGameFile({{QStringLiteral("FileName"), QStringLiteral("mod.wad")}});
         database->insertGameFile({{QStringLiteral("FileName"), QStringLiteral("extra.wad")}});
         database->insertTag(QStringLiteral("Test tag"), true);
+        qobject_cast<SourcePortModel *>(launcher.sourcePorts())->reload();
         QVERIFY(!launcher.needsSetup());
 
         QQmlApplicationEngine engine;
@@ -44,12 +48,15 @@ private Q_SLOTS:
         engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
         engine.load(QUrl::fromLocalFile(QStringLiteral(QML_SOURCE_DIR "/Main.qml")));
         QVERIFY2(!engine.rootObjects().isEmpty(), qPrintable(warnings.join(QLatin1Char('\n'))));
+        QTest::qWait(100);
         QObject *root = engine.rootObjects().first();
         auto evaluate = [&](QObject *scope, const QString &code) {
             QQmlExpression expression(QQmlEngine::contextForObject(scope), scope, code);
             QVariant value = expression.evaluate();
-            if (expression.hasError())
+            if (expression.hasError()) {
                 warnings.append(expression.error().toString());
+                qWarning() << expression.error();
+            }
             return value;
         };
         QObject *page = evaluate(root, QStringLiteral("pageStack.currentItem")).value<QObject *>();
@@ -61,19 +68,38 @@ private Q_SLOTS:
         QCOMPARE(page->property("selectedGameFileId").toInt(), mod);
         model->setSortDescending(true);
         QCOMPARE(page->property("selectedGameFileId").toInt(), mod);
-        evaluate(page, QStringLiteral("playDialog.openFor(%1)").arg(mod));
-        evaluate(page, QStringLiteral("playDialog.additionalFiles = ['extra.wad']"));
-        QCOMPARE(evaluate(page, QStringLiteral("playDialog.collect().additionalFiles[0]")).toString(), QStringLiteral("extra.wad"));
-        evaluate(page, QStringLiteral("playDialog.close()"));
-        evaluate(page, QStringLiteral("editDialog.openFor(%1)").arg(mod));
-        evaluate(page, QStringLiteral("editDialog.fileTags = [1]; editDialog.reject()"));
+        QObject *playDialog = page->findChild<QObject *>(QStringLiteral("playDialog"));
+        QObject *editDialog = page->findChild<QObject *>(QStringLiteral("editDialog"));
+        QVERIFY(playDialog);
+        QVERIFY(editDialog);
+        evaluate(playDialog, QStringLiteral("openFor(%1)").arg(mod));
+        evaluate(playDialog, QStringLiteral("additionalFiles = ['extra.wad']"));
+        QCOMPARE(evaluate(playDialog, QStringLiteral("collect().additionalFiles[0]")).toString(), QStringLiteral("extra.wad"));
+        evaluate(playDialog, QStringLiteral("close()"));
+        evaluate(editDialog, QStringLiteral("openFor(%1)").arg(mod));
+        evaluate(editDialog, QStringLiteral("fileTags = [1]; close()"));
         QVERIFY(database->tagsForGameFile(mod).isEmpty());
         model->load(LibraryModel::Local, -1, QStringLiteral("no-match"));
         QCOMPARE(page->property("selectedGameFileId").toInt(), -1);
-        for (const QString &component : {QStringLiteral("sourcePortsPageComponent"), QStringLiteral("tagsPageComponent"),
-             QStringLiteral("settingsPageComponent"), QStringLiteral("setupPageComponent"), QStringLiteral("getModsPageComponent")}) {
-            evaluate(root, QStringLiteral("pushUnique(%1)").arg(component));
-            QTest::qWait(30);
+        for (const QString &file : {QStringLiteral("SourcePortsPage.qml"), QStringLiteral("TagsPage.qml"),
+             QStringLiteral("SettingsPage.qml"), QStringLiteral("SetupPage.qml"), QStringLiteral("GetModsPage.qml")}) {
+            const QString url = QUrl::fromLocalFile(QStringLiteral(QML_SOURCE_DIR "/") + file).toString();
+            evaluate(root, QStringLiteral("pushUnique('%1')").arg(url));
+            QTest::qWait(100);
+            if (file == QStringLiteral("SourcePortsPage.qml")) {
+                QObject *portsPage = evaluate(root, QStringLiteral("pageStack.currentItem")).value<QObject *>();
+                QVERIFY(portsPage);
+                QObject *dialog = portsPage->findChild<QObject *>(QStringLiteral("sourcePortEditDialog"));
+                QVERIFY(dialog);
+                evaluate(dialog, QStringLiteral("openFor(1)"));
+                QObject *extra = dialog->findChild<QObject *>(QStringLiteral("extraField"));
+                QObject *saveDir = dialog->findChild<QObject *>(QStringLiteral("saveDirField"));
+                QVERIFY(extra);
+                QVERIFY(saveDir);
+                QCOMPARE(extra->property("text").toString(), QString());
+                QCOMPARE(saveDir->property("text").toString(), QString());
+                evaluate(dialog, QStringLiteral("close()"));
+            }
         }
         QStringList failures;
         for (const QString &warning : warnings) {

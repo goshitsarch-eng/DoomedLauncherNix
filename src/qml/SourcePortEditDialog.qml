@@ -6,6 +6,7 @@ import org.kde.kirigami as Kirigami
 
 Kirigami.Dialog {
     id: dialog
+    objectName: "sourcePortEditDialog"
 
     title: editingId > 0 ? i18n("Edit Source Port") : i18n("Add Source Port")
     preferredWidth: Kirigami.Units.gridUnit * 26
@@ -17,13 +18,13 @@ Kirigami.Dialog {
         editingId = sourcePortId
         if (sourcePortId > 0) {
             const row = Launcher.sourcePorts.get(Launcher.sourcePorts.rowForId(sourcePortId))
-            nameField.text = row.Name !== undefined ? String(row.Name) : ""
-            executableField.text = row.Executable !== undefined ? String(row.Executable) : ""
-            directoryField.text = row.Directory !== undefined ? String(row.Directory) : ""
-            extensionsField.text = row.SupportedExtensions !== undefined ? String(row.SupportedExtensions) : ""
-            fileOptionField.text = row.FileOption !== undefined ? String(row.FileOption) : "-file"
-            extraField.text = row.ExtraParameters !== undefined ? String(row.ExtraParameters) : ""
-            saveDirField.text = row.AltSaveDirectory !== undefined ? String(row.AltSaveDirectory) : ""
+            nameField.text = row.Name ? String(row.Name) : ""
+            executableField.text = row.Executable ? String(row.Executable) : ""
+            directoryField.text = row.Directory ? String(row.Directory) : ""
+            extensionsField.text = row.SupportedExtensions ? String(row.SupportedExtensions) : ""
+            fileOptionField.text = row.FileOption ? String(row.FileOption) : "-file"
+            extraField.text = row.ExtraParameters ? String(row.ExtraParameters) : ""
+            saveDirField.text = row.AltSaveDirectory ? String(row.AltSaveDirectory) : ""
         } else {
             nameField.text = ""
             executableField.text = ""
@@ -89,12 +90,14 @@ Kirigami.Dialog {
 
         QQC2.TextField {
             id: extraField
+            objectName: "extraField"
             Kirigami.FormData.label: i18n("Extra parameters:")
             Layout.fillWidth: true
         }
 
         QQC2.TextField {
             id: saveDirField
+            objectName: "saveDirField"
             Kirigami.FormData.label: i18n("Save game directory:")
             Layout.fillWidth: true
         }
