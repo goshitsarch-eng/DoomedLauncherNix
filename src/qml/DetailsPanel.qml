@@ -174,6 +174,17 @@ QQC2.ScrollView {
                             elide: Text.ElideMiddle
                         }
                         QQC2.ToolButton {
+                            visible: fileType === 2
+                            icon.name: "media-playback-start"
+                            QQC2.ToolTip.text: i18n("Play demo with remembered source port")
+                            QQC2.ToolTip.visible: hovered
+                            onClicked: {
+                                const error = Launcher.playDemo(panel.gameFileId, fileName)
+                                if (error !== "")
+                                    applicationWindow().showPassiveNotification(error)
+                            }
+                        }
+                        QQC2.ToolButton {
                             icon.name: "document-open"
                             QQC2.ToolTip.text: i18n("Open")
                             QQC2.ToolTip.visible: hovered

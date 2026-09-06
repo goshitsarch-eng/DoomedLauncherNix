@@ -8,6 +8,7 @@
 #include "wadparser.h"
 
 #include <QDateTime>
+#include <QCryptographicHash>
 #include <QDir>
 #include <QFileInfo>
 #include <QImage>
@@ -88,6 +89,16 @@ LibraryOps::AddResult LibraryOps::addFiles(const QStringList &paths, bool asIwad
         const QString destPath = LauncherPaths::gameFilesDir() + QLatin1Char('/') + storedName;
         if (sourceInfo.absoluteFilePath() != QFileInfo(destPath).absoluteFilePath()) {
             if (QFileInfo::exists(destPath) && !m_db->gameFileByName(storedName).isEmpty()) {
+                QFile incoming(sourceInfo.absoluteFilePath());
+                QFile managed(destPath);
+                QCryptographicHash incomingHash(QCryptographicHash::Sha256);
+                QCryptographicHash managedHash(QCryptographicHash::Sha256);
+                if (!incoming.open(QIODevice::ReadOnly) || !managed.open(QIODevice::ReadOnly)
+                    || !incomingHash.addData(&incoming) || !managedHash.addData(&managed)
+                    || incomingHash.result() != managedHash.result()) {
+                    result.failed.append(sourcePath);
+                    continue;
+                }
                 // Keep the managed copy, but continue below so Add IWADs
                 // can promote a file that was previously imported as a mod.
             } else {

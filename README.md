@@ -81,6 +81,8 @@ releases are left intact; ordinary pushes still build but do not replace assets.
   window. Selection remains attached to the same file when sorting; filtering
   a selected file out clears its selection.
 - **Add IWADs** also works when the file already exists in the mod library.
+- Use the play button beside an imported demo in Details to replay it with the
+  entry's remembered source port. The selected engine must support that demo.
 - Changes to tags in **Edit File** are applied with Save; Cancel discards them.
 - One idgames download runs at a time. Failed downloads do not leave a pending
   request to launch an unrelated later download.
@@ -91,9 +93,9 @@ This review covers the Qt library, play options, imports, tags, settings and
 idgames paths. Older database tables do not imply complete upstream feature
 parity: utility launching and game-profile editing still have no Qt interface.
 The store scanner records a Doom 64 re-release executable, but the standard
-Doom source-port picker does not launch that separate engine type. Demo and save
-associations currently open with the desktop application; selecting them does
-not replay a demo or load a particular save through the launcher. Source-port
+Doom source-port picker does not launch that separate engine type. Imported demos can be replayed from Details with the entry's remembered source
+port. Save associations still open with the desktop application; choosing an
+individual associated save does not load it through the launcher. Source-port
 specific game rendering and physical desktop/portal behavior require testing
 with those engines on a real system.
 

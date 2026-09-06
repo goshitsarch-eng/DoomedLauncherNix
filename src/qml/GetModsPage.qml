@@ -13,7 +13,10 @@ Kirigami.ScrollablePage {
 
     Connections {
         target: Launcher.idGames
-        function onSearchFinished(list) { page.results = list }
+        function onSearchFinished(list) {
+            if (applicationWindow().pageStack.currentItem === page)
+                page.results = list
+        }
         function onSearchFailed(message) {
             applicationWindow().showPassiveNotification(i18n("Search failed: %1", message))
         }

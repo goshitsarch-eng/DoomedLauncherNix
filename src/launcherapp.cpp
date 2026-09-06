@@ -196,7 +196,9 @@ void LauncherApp::addFiles(const QList<QUrl> &urls, bool asIwads)
         ensureDefaults();
     Q_EMIT addFinished(result.added.size(), result.failed.size());
     Q_EMIT libraryChanged();
-    Q_EMIT toast(tr("Added %1 file(s)").arg(result.added.size()));
+    Q_EMIT toast(result.failed.isEmpty() ? tr("Added %1 file(s)").arg(result.added.size())
+        : tr("Added %1 file(s); %2 failed. Check file permissions and conflicting filenames.")
+              .arg(result.added.size()).arg(result.failed.size()));
 }
 
 void LauncherApp::addDirectory(const QUrl &url, bool recursive)
@@ -520,6 +522,26 @@ void LauncherApp::openAssociationFile(const QString &fileName, int fileType)
     const QString path =
         QDir::isAbsolutePath(fileName) ? fileName : base + QLatin1Char('/') + fileName;
     QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+}
+
+QString LauncherApp::playDemo(int gameFileId, const QString &fileName)
+{
+    for (const QVariant &value : m_db->files(gameFileId, 2)) {
+        if (value.toMap().value(QStringLiteral("FileName")).toString() != fileName)
+            continue;
+        const QString path = QDir::isAbsolutePath(fileName) ? fileName
+            : LauncherPaths::demosDir() + QLatin1Char('/') + fileName;
+        if (!QFileInfo::exists(path))
+            return tr("The demo file could not be found.");
+        QVariantMap request = playDefaults(gameFileId);
+        request.insert(QStringLiteral("playDemoFile"), path);
+        request.insert(QStringLiteral("map"), QString());
+        request.insert(QStringLiteral("loadLatestSave"), false);
+        request.insert(QStringLiteral("extraParamsOnly"), false);
+        request.insert(QStringLiteral("remember"), false);
+        return play(request);
+    }
+    return tr("The demo is not associated with this library entry.");
 }
 
 // Source port detection ----------------------------------------------------------

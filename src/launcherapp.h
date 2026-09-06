@@ -90,6 +90,7 @@ public:
     Q_INVOKABLE void importAssociationFiles(int gameFileId, const QList<QUrl> &urls);
     Q_INVOKABLE void deleteAssociationFile(int fileId);
     Q_INVOKABLE void openAssociationFile(const QString &fileName, int fileType);
+    Q_INVOKABLE QString playDemo(int gameFileId, const QString &fileName);
 
     // Source port detection --------------------------------------------------
     Q_INVOKABLE void detectSourcePorts();

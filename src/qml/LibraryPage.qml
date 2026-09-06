@@ -16,6 +16,11 @@ Kirigami.Page {
     property var selectedIds: []
     property string searchText: ""
     property bool showingDetails: false
+    readonly property bool activePage: applicationWindow().pageStack.currentItem === page
+    onActivePageChanged: {
+        if (activePage && isIdGamesTab)
+            reload()
+    }
 
     function clearSelection() {
         fileList.currentIndex = -1
@@ -85,7 +90,7 @@ Kirigami.Page {
     Connections {
         target: Launcher.idGames
         function onSearchFinished(results) {
-            if (page.isIdGamesTab)
+            if (page.isIdGamesTab && page.activePage)
                 Launcher.library.setExternalRows(results)
         }
         function onSearchFailed(message) {

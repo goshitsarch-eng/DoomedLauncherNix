@@ -14,6 +14,7 @@ Fork versions are numbered separately from upstream releases.
   searching and deleting. Offer details on narrow windows and handle removed tabs.
 - Apply edited tags only when Save is pressed. Decode executable picker URLs so
   paths containing spaces and non-ASCII characters work.
+- Wire imported demo playback into Details using the remembered launch settings.
 - Allow Add IWADs to promote an existing mod; repair default selections after
   deletion and update remembered mod lists and IWAD filenames after renaming.
 - Isolate extracted archive members so identically named WADs cannot overwrite

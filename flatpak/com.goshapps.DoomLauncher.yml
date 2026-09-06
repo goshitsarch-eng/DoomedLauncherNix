@@ -26,5 +26,12 @@ modules:
     sources:
       - type: dir
         path: ..
+        skip:
+          - .git
+          - .flatpak-builder
+          - build
+          - build-flatpak
+          - repo
+          - dist
     post-install:
       - install -Dm644 LICENSE ${FLATPAK_DEST}/share/licenses/com.goshapps.DoomLauncher/LICENSE

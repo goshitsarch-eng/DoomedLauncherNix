@@ -57,6 +57,25 @@ private Q_SLOTS:
         QCOMPARE(database->iwads().first().toMap().value(QStringLiteral("FileName")).toString(), QStringLiteral("renamed.wad"));
     }
 
+    void collidingImportsDoNotReportSuccess()
+    {
+        LibraryOps ops(database);
+        const QString first = write(QStringLiteral("original/collision.wad"), "FIRST");
+        const QString second = write(QStringLiteral("different/collision.wad"), "SECOND");
+        QCOMPARE(ops.addFiles({first}, false).added.size(), 1);
+        const auto result = ops.addFiles({second}, false);
+        QCOMPARE(result.failed.size(), 1);
+        QVERIFY(result.added.isEmpty());
+        QFile managed(LauncherPaths::gameFilesDir() + QStringLiteral("/collision.wad"));
+        QVERIFY(managed.open(QIODevice::ReadOnly));
+        QCOMPARE(managed.readAll(), QByteArray("FIRST"));
+    }
+
+    void unassociatedDemoIsNotLaunched()
+    {
+        QVERIFY(!launcher.playDemo(database->iwadGameFileIds().first(), QStringLiteral("missing.lmp")).isEmpty());
+    }
+
     void onlineIdsDoNotUseLocalArtOrIwadStatus()
     {
         const int id = database->iwadGameFileIds().first();

@@ -43,7 +43,7 @@ private Q_SLOTS:
         engine.rootContext()->setContextProperty(QStringLiteral("AboutData"), QVariant::fromValue(KAboutData::applicationData()));
         engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
         engine.load(QUrl::fromLocalFile(QStringLiteral(QML_SOURCE_DIR "/Main.qml")));
-        QVERIFY2(!engine.rootObjects().isEmpty(), qPrintable(warnings.join('\n')));
+        QVERIFY2(!engine.rootObjects().isEmpty(), qPrintable(warnings.join(QLatin1Char('\n'))));
         QObject *root = engine.rootObjects().first();
         auto evaluate = [&](QObject *scope, const QString &code) {
             QQmlExpression expression(QQmlEngine::contextForObject(scope), scope, code);
@@ -82,7 +82,7 @@ private Q_SLOTS:
                 || warning.contains(QStringLiteral("is not a type")) || warning.contains(QStringLiteral("Cannot override")))
                 failures.append(warning);
         }
-        QVERIFY2(failures.isEmpty(), qPrintable(failures.join('\n')));
+        QVERIFY2(failures.isEmpty(), qPrintable(failures.join(QLatin1Char('\n'))));
     }
 };
 QTEST_MAIN(QmlSmokeTest)

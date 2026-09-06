@@ -3,7 +3,6 @@
 #include "database.h"
 #include "launcherpaths.h"
 #include "managedpath.h"
-#include "externalurl.h"
 
 #include <QFile>
 #include <QJsonArray>
@@ -140,8 +139,9 @@ void IdGamesClient::download(const QString &dir, const QString &fileName)
     if (!path.isEmpty() && !path.endsWith(QLatin1Char('/')))
         path += QLatin1Char('/');
 
-    QUrl url = ExternalUrl::fromHttpInput(mirror);
-    if (url.isEmpty()) {
+    QUrl url(mirror);
+    if (!url.isValid() || url.host().isEmpty()
+        || (url.scheme() != QStringLiteral("https") && url.scheme() != QStringLiteral("http"))) {
         Q_EMIT downloadFailed(fileName, tr("The mirror must be an HTTP or HTTPS URL."));
         return;
     }
