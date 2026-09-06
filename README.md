@@ -72,7 +72,7 @@ all four packages. A matching `vVERSION` tag also triggers publication. Existing
 releases are left intact; ordinary pushes still build but do not replace assets.
 `python3 scripts/release_metadata.py` checks version consistency locally.
 
-## Using the repaired controls
+## Library and launch controls
 
 - In **Play with Options**, choose library mods under **Additional files**, then
   Add, Remove or Move up to arrange them. Additional mods load in listed order,
@@ -81,6 +81,8 @@ releases are left intact; ordinary pushes still build but do not replace assets.
   window. Selection remains attached to the same file when sorting; filtering
   a selected file out clears its selection.
 - **Add IWADs** also works when the file already exists in the mod library.
+  Imports with identical filenames but different contents are rejected; rename
+  the incoming file first to keep both versions.
 - Use the play button beside an imported demo in Details to replay it with the
   entry's remembered source port. The selected engine must support that demo.
 - Changes to tags in **Edit File** are applied with Save; Cancel discards them.
@@ -93,8 +95,8 @@ This review covers the Qt library, play options, imports, tags, settings and
 idgames paths. Older database tables do not imply complete upstream feature
 parity: utility launching and game-profile editing still have no Qt interface.
 The store scanner records a Doom 64 re-release executable, but the standard
-Doom source-port picker does not launch that separate engine type. Imported demos can be replayed from Details with the entry's remembered source
-port. Save associations still open with the desktop application; choosing an
+Doom source-port picker does not launch that separate engine type. Imported
+demos can be replayed from Details with the entry's remembered source port. Save associations still open with the desktop application; choosing an
 individual associated save does not load it through the launcher. Source-port
 specific game rendering and physical desktop/portal behavior require testing
 with those engines on a real system.
@@ -137,6 +139,10 @@ files, not the SDK's `/usr`; arguments are never evaluated by a shell.
 The existing `org.freedesktop.Flatpak` permission is required; no additional
 permissions were added. Failed host commands are reported and detection
 timeouts terminate the bridge. Native installations still run directly.
+
+The additional regression targets cover IWAD promotion, rename references,
+archive collisions, download ordering and errors, library selection, metadata
+cancellation and QML page/dialog loading. GUI tests run offscreen.
 
 The `hostprocess_test` CTest regression uses a strict host-bridge fixture
 to exercise detection, launch argv, host-only paths, errors and timeouts.

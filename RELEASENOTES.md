@@ -13,12 +13,14 @@ Fork versions are numbered separately from upstream releases.
 - Keep library selection and details attached to the correct entry after sorting,
   searching and deleting. Offer details on narrow windows and handle removed tabs.
 - Apply edited tags only when Save is pressed. Decode executable picker URLs so
-  paths containing spaces and non-ASCII characters work.
+  paths containing spaces and non-ASCII characters work. Keep empty source-port
+  options empty when editing, instead of converting them to the text "null".
 - Wire imported demo playback into Details using the remembered launch settings.
 - Allow Add IWADs to promote an existing mod; repair default selections after
   deletion and update remembered mod lists and IWAD filenames after renaming.
 - Isolate extracted archive members so identically named WADs cannot overwrite
-  one another. Keep online archive IDs separate from local artwork and IWAD IDs.
+  one another. Reject same-name imports with different contents. Keep online
+  archive IDs separate from local artwork and IWAD IDs.
 - Cancel stale idgames searches, report malformed/API error responses, stream
   downloads into isolated temporary folders and reject invalid download paths.
   Serialize downloads and clear pending autoplay after failures.
