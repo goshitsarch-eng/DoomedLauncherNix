@@ -1,7 +1,10 @@
 id: com.goshapps.DoomLauncher
-runtime: org.kde.Platform
-runtime-version: '6.10'
-sdk: org.kde.Sdk
+runtime: org.gnome.Platform
+runtime-version: '49'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.llvm20
 branch: stable
 command: doomedlauncher
 finish-args:
@@ -10,28 +13,68 @@ finish-args:
   - --socket=wayland
   - --socket=fallback-x11
   - --device=dri
-  - --filesystem=home
-  # Launch host source ports (native binaries, Flatpak and snap wrappers).
+  # Preserve the legacy library. New imports use native document portals.
+  - --filesystem=xdg-data/doomlauncher:create
+  # Execute source ports installed on the host (explicit product capability).
   - --talk-name=org.freedesktop.Flatpak
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/llvm20/bin
+  env:
+    CARGO_NET_OFFLINE: 'true'
+    FLUTTER_SUPPRESS_ANALYTICS: 'true'
+    DART_SUPPRESS_ANALYTICS: 'true'
 modules:
   - name: doomedlauncher
-    buildsystem: cmake-ninja
-    config-opts:
-      - -DCMAKE_BUILD_TYPE=Release
-      - -DBUILD_TESTING=ON
-    run-tests: true
-    test-rule: ""
-    test-commands:
-      - QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software ctest --output-on-failure
+    buildsystem: simple
+    build-commands:
+      - >-
+        set -eu; export PATH="$PWD/flutter-sdk/bin:$PATH"
+        PUB_CACHE="$PWD/.pub-cache"
+        CARGO_HOME="$PWD/.cargo-home";
+        "$PWD/flutter-sdk/bin/cache/dart-sdk/bin/dart" pub
+        --directory flutter-sdk/packages/flutter_tools get --offline --enforce-lockfile;
+        flutter --no-version-check config --no-analytics;
+        flutter --no-version-check pub get --offline --enforce-lockfile;
+        flutter --no-version-check build linux --release --no-pub
+      - >-
+        case "$FLATPAK_ARCH" in x86_64) arch=x64;; aarch64) arch=arm64;; *) exit 1;; esac;
+        install -d /app/lib/doomedlauncher;
+        cp -a "build/linux/$arch/release/bundle/." /app/lib/doomedlauncher/
+      - install -Dm755 packaging/linux/doomedlauncher /app/bin/doomedlauncher
+      - install -Dm644 data/com.goshapps.DoomLauncher.desktop /app/share/applications/com.goshapps.DoomLauncher.desktop
+      - install -Dm644 data/com.goshapps.DoomLauncher.metainfo.xml /app/share/metainfo/com.goshapps.DoomLauncher.metainfo.xml
+      - install -Dm644 data/com.goshapps.DoomLauncher.png /app/share/icons/hicolor/256x256/apps/com.goshapps.DoomLauncher.png
+      - install -Dm644 LICENSE /app/share/licenses/com.goshapps.DoomLauncher/LICENSE
+      - >-
+        CARGO_HOME="$PWD/.cargo-home" python3 scripts/third_party_notices.py
+        --output /app/share/licenses/com.goshapps.DoomLauncher/THIRD_PARTY_NOTICES.md
     sources:
+      # scripts/prepare_flatpak.py stages SDK, locked Pub packages and Cargo
+      # vendor sources. The actual build sandbox needs no network access.
       - type: dir
         path: ..
         skip:
           - .git
+          - .dart_tool
           - .flatpak-builder
           - build
           - build-flatpak
+          - rust/target
           - repo
           - dist
-    post-install:
-      - install -Dm644 LICENSE ${FLATPAK_DEST}/share/licenses/com.goshapps.DoomLauncher/LICENSE
+          - linux/flutter/ephemeral
+          - windows/flutter/ephemeral
+          - macos/Flutter/ephemeral
+      - type: dir
+        path: ../build/flatpak-input/flutter-sdk
+        dest: flutter-sdk
+      - type: dir
+        path: ../build/flatpak-input/pub-cache
+        dest: .pub-cache
+      - type: dir
+        path: ../build/flatpak-input/vendor
+        dest: vendor
+      - type: file
+        path: ../build/flatpak-input/cargo-config.toml
+        dest: .cargo
+        dest-filename: config.toml
