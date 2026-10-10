@@ -219,6 +219,8 @@ class _PlayEntryDialogState extends State<PlayEntryDialog> {
         widget.demoPath == null
             ? 'Play ${gameTitle(widget.game)}'
             : 'Replay demo',
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
       ),
       content: SizedBox(
         width: 650,

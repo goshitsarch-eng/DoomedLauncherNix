@@ -132,14 +132,17 @@ class DesktopLifecycle with WindowListener {
     var announcedShutdown = false;
     var approved = false;
     try {
-      if (controller.snapshot.isNotEmpty &&
-          !await prepareLauncherShutdown(
-            controller,
-            context: launcherNavigatorKey.currentContext,
-          )) {
-        return false;
+      if (controller.snapshot.isNotEmpty) {
+        if (!await prepareLauncherShutdown(
+          controller,
+          context: launcherNavigatorKey.currentContext,
+        )) {
+          return false;
+        }
+        await _saveGeometry(closing: true);
       }
-      await _saveGeometry(closing: true);
+      // Failed initialization cannot start owned work or persist preferences.
+      // In particular, a corrupt/read-only database must not prevent quitting.
       await controller.backend.diagnostics.flush();
       if (_isMacOS) {
         final accepted = await const MethodChannel('doomedlauncher/lifecycle')

@@ -1,5 +1,9 @@
 # Desktop QA record
 
+The follow-up [hands-on audit](HANDS_ON_AUDIT.md) records the later exhaustive
+control inventory, discovered defects, fixes, native screenshots and regression
+results. The observations below describe the original migration baseline.
+
 Doom Launcher 5.0.0-alpha.1 was exercised on Linux on 2026-10-09 using its
 packaged Flutter release executable and Rust shared library. Pointer and keyboard
 input were sent through X11 on Xvfb, with software rendering. Screenshots below

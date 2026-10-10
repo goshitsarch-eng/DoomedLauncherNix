@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:doomedlauncher/bridge/backend.dart';
+import 'package:doomedlauncher/main.dart' show DesktopLifecycle;
 import 'package:doomedlauncher/state/app_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -16,6 +17,29 @@ void main() {
 
   setUp(() async => fixture = await NativeFixture.create());
   tearDown(() async => fixture.dispose());
+
+  test(
+    'failed native startup can quit without writing window preferences',
+    () async {
+      final root = Directory(p.join(fixture.directory.path, 'corrupt-startup'));
+      await root.create();
+      final database = File(p.join(root.path, 'DoomLauncher.sqlite'));
+      await database.writeAsString('not a sqlite database');
+      final controller = AppController(Backend(dataRoot: root.path));
+      addTearDown(controller.dispose);
+      await controller.initialize();
+      expect(controller.snapshot, isEmpty);
+      expect(controller.error, contains('not a database'));
+      expect(
+        await DesktopLifecycle(
+          controller,
+          isMacOS: false,
+        ).requestQuit(terminateWindow: false),
+        isTrue,
+      );
+      expect(await database.readAsString(), 'not a sqlite database');
+    },
+  );
 
   test(
     'native UTF-8 import, rename, metadata and tags persist across backends',

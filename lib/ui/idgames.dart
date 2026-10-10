@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../platform/external_links.dart';
 import '../state/app_controller.dart';
 import 'management/helpers.dart';
 
@@ -134,8 +134,7 @@ class _IdgamesPageState extends State<IdgamesPage> {
       return;
     }
     try {
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
-          mounted) {
+      if (!await launchExternalUri(uri) && mounted) {
         showNotice(context, 'Could not open the website.');
       }
     } catch (error) {
@@ -469,6 +468,7 @@ class _IdgamesPageState extends State<IdgamesPage> {
   Future<void> _showDetails(Map<String, dynamic> file) => showDialog<void>(
     context: context,
     builder: (dialogContext) => AlertDialog(
+      scrollable: true,
       title: Text(_title(file)),
       content: SizedBox(
         width: 620,
@@ -531,7 +531,7 @@ class _IdgamesPageState extends State<IdgamesPage> {
           items: const [
             DropdownMenuItem(value: 'title', child: Text('Title')),
             DropdownMenuItem(value: 'author', child: Text('Author')),
-            DropdownMenuItem(value: 'name', child: Text('Filename')),
+            DropdownMenuItem(value: 'filename', child: Text('Filename')),
             DropdownMenuItem(value: 'description', child: Text('Description')),
           ],
           onChanged: (value) => setState(() => _type = value!),

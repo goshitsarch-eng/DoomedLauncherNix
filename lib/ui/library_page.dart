@@ -102,6 +102,7 @@ class LibraryPage extends StatefulWidget {
 class LibraryPageState extends State<LibraryPage> {
   final _search = TextEditingController();
   final _searchFocus = FocusNode();
+  final _libraryFocus = FocusNode(debugLabel: 'Library entries');
   String _filter = 'local', _sort = 'Title';
   int? _tagId, _selectedId;
   bool _descending = false, _details = true;
@@ -143,6 +144,7 @@ class LibraryPageState extends State<LibraryPage> {
   void dispose() {
     _search.dispose();
     _searchFocus.dispose();
+    _libraryFocus.dispose();
     super.dispose();
   }
 
@@ -190,16 +192,22 @@ class LibraryPageState extends State<LibraryPage> {
   }
 
   Future<void> _rename(Map<String, dynamic> game) async {
-    final name = await showDialog<String>(
+    await showDialog<void>(
       context: context,
-      builder: (_) => _RenameEntryDialog(name: rowText(game, 'FileName')),
+      builder: (_) => _RenameEntryDialog(
+        name: rowText(game, 'FileName'),
+        onRename: (name) async {
+          if (name == rowText(game, 'FileName')) return null;
+          final result = await widget.controller.execute('rename_entry', {
+            'id': rowId(game),
+            'name': name,
+          });
+          return result == null
+              ? widget.controller.error ?? 'Could not rename the file.'
+              : null;
+        },
+      ),
     );
-    if (name != null && name != rowText(game, 'FileName')) {
-      await widget.controller.execute('rename_entry', {
-        'id': rowId(game),
-        'name': name,
-      });
-    }
   }
 
   Future<void> _action(String action, Map<String, dynamic> game) async {
@@ -313,11 +321,16 @@ class LibraryPageState extends State<LibraryPage> {
     const PopupMenuDivider(),
     const PopupMenuItem(value: 'delete', child: Text('Delete…')),
   ];
+  void _selectGame(Map<String, dynamic> game) {
+    _libraryFocus.requestFocus();
+    setState(() => _selectedId = rowId(game));
+  }
+
   Future<void> _contextMenu(
     TapDownDetails details,
     Map<String, dynamic> game,
   ) async {
-    setState(() => _selectedId = rowId(game));
+    _selectGame(game);
     final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
     final action = await showMenu<String>(
       context: context,
@@ -358,7 +371,7 @@ class LibraryPageState extends State<LibraryPage> {
     if (!rows.any((game) => rowId(game) == _selectedId)) _selectedId = null;
     final game = rows.where((game) => rowId(game) == _selectedId).firstOrNull;
     final tiles = widget.controller.settings['GameFileViewType'] == 'TileView';
-    return LayoutBuilder(
+    final content = LayoutBuilder(
       builder: (context, constraints) {
         final sideDetails =
             _details && game != null && constraints.maxWidth > 900;
@@ -570,43 +583,46 @@ class LibraryPageState extends State<LibraryPage> {
         );
       },
     );
+    return Focus(focusNode: _libraryFocus, child: content);
   }
 
   Widget _emptyState() => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            _search.text.isNotEmpty
-                ? Icons.search_off
-                : Icons.sports_esports_outlined,
-            size: 58,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _search.text.isNotEmpty
-                ? 'No matching files'
-                : 'Make room for another adventure',
-            style: Theme.of(context).textTheme.titleLarge,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _search.text.isNotEmpty
-                ? 'Try another title, author or filename.'
-                : 'Import your WADs, mods and map packs. Drop files or folders anywhere in the window.',
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 18),
-          OutlinedButton.icon(
-            onPressed: widget.onImportFiles,
-            icon: const Icon(Icons.add),
-            label: const Text('Import files'),
-          ),
-        ],
+    child: SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _search.text.isNotEmpty
+                  ? Icons.search_off
+                  : Icons.sports_esports_outlined,
+              size: 58,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _search.text.isNotEmpty
+                  ? 'No matching files'
+                  : 'Make room for another adventure',
+              style: Theme.of(context).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _search.text.isNotEmpty
+                  ? 'Try another title, author or filename.'
+                  : 'Import your WADs, mods and map packs. Drop files or folders anywhere in the window.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            OutlinedButton.icon(
+              onPressed: widget.onImportFiles,
+              icon: const Icon(Icons.add),
+              label: const Text('Import files'),
+            ),
+          ],
+        ),
       ),
     ),
   );
@@ -638,7 +654,7 @@ class LibraryPageState extends State<LibraryPage> {
                     onDoubleTap: () => _action('play', game),
                     child: ListTile(
                       selected: selected,
-                      onTap: () => setState(() => _selectedId = rowId(game)),
+                      onTap: () => _selectGame(game),
                       leading: ClipRRect(
                         borderRadius: BorderRadius.circular(6),
                         child: SizedBox(
@@ -696,7 +712,7 @@ class LibraryPageState extends State<LibraryPage> {
     itemCount: rows.length,
     itemBuilder: (context, index) {
       final game = rows[index], selected = rowId(rows[index]) == _selectedId;
-      void select() => setState(() => _selectedId = rowId(game));
+      void select() => _selectGame(game);
       return Semantics(
         selected: selected,
         child: GestureDetector(
@@ -803,6 +819,7 @@ class _DeleteEntryDialogState extends State<_DeleteEntryDialog> {
   bool _deleteFile = false;
   @override
   Widget build(BuildContext context) => AlertDialog(
+    scrollable: true,
     title: const Text('Delete library entry?'),
     content: SizedBox(
       width: 440,
@@ -837,14 +854,37 @@ class _DeleteEntryDialogState extends State<_DeleteEntryDialog> {
 }
 
 class _RenameEntryDialog extends StatefulWidget {
-  const _RenameEntryDialog({required this.name});
+  const _RenameEntryDialog({required this.name, required this.onRename});
   final String name;
+  final Future<String?> Function(String) onRename;
   @override
   State<_RenameEntryDialog> createState() => _RenameEntryDialogState();
 }
 
 class _RenameEntryDialogState extends State<_RenameEntryDialog> {
   late final _name = TextEditingController(text: widget.name);
+  bool _saving = false;
+  String? _error;
+
+  Future<void> _save() async {
+    final name = _name.text.trim();
+    if (_saving || name.isEmpty) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    final error = await widget.onRename(name);
+    if (!mounted) return;
+    if (error == null) {
+      Navigator.pop(context);
+    } else {
+      setState(() {
+        _saving = false;
+        _error = error;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _name.dispose();
@@ -852,33 +892,45 @@ class _RenameEntryDialogState extends State<_RenameEntryDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Rename file'),
-    content: SizedBox(
-      width: 440,
-      child: TextField(
-        autofocus: true,
-        controller: _name,
-        decoration: const InputDecoration(
-          labelText: 'Filename including extension',
+  Widget build(BuildContext context) => PopScope(
+    canPop: !_saving,
+    child: AlertDialog(
+      title: const Text('Rename file'),
+      content: SizedBox(
+        width: 440,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                autofocus: true,
+                enabled: !_saving,
+                controller: _name,
+                decoration: const InputDecoration(
+                  labelText: 'Filename including extension',
+                ),
+                onChanged: (_) => setState(() {}),
+                onSubmitted: (_) => _save(),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                InlineError(_error!),
+              ],
+            ],
+          ),
         ),
-        onChanged: (_) => setState(() {}),
-        onSubmitted: (value) {
-          if (value.trim().isNotEmpty) Navigator.pop(context, value.trim());
-        },
       ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _saving || _name.text.trim().isEmpty ? null : _save,
+          child: Text(_saving ? 'Renaming…' : 'Rename'),
+        ),
+      ],
     ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
-      ),
-      FilledButton(
-        onPressed: _name.text.trim().isEmpty
-            ? null
-            : () => Navigator.pop(context, _name.text.trim()),
-        child: const Text('Rename'),
-      ),
-    ],
   );
 }

@@ -64,6 +64,11 @@ class _LauncherHomeState extends State<LauncherHome> {
   bool _dragging = false;
   Timer? _sessionsTimer;
   bool _polling = false;
+  bool get _canPlaySelected {
+    final game = _libraryKey.currentState?.selected;
+    return game != null && game['pathError'] == null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -267,6 +272,9 @@ class _LauncherHomeState extends State<LauncherHome> {
       child: Focus(
         autofocus: true,
         child: Scaffold(
+          bottomNavigationBar: controller.sessions.isNotEmpty
+              ? _sessionBar()
+              : null,
           body: DropTarget(
             enable:
                 !controller.shutdownInProgress &&
@@ -449,7 +457,6 @@ class _LauncherHomeState extends State<LauncherHome> {
                               },
                             ),
                     ),
-                    if (controller.sessions.isNotEmpty) _sessionBar(),
                   ],
                 ),
                 if (_dragging)
@@ -644,13 +651,13 @@ class _LauncherHomeState extends State<LauncherHome> {
         PlatformMenuItem(
           label: 'Play selected',
           shortcut: const SingleActivator(LogicalKeyboardKey.keyP, meta: true),
-          onSelected: _libraryKey.currentState?.selected == null
+          onSelected: !_canPlaySelected
               ? null
               : () => _libraryKey.currentState?.playSelected(),
         ),
         PlatformMenuItem(
           label: 'Play with options…',
-          onSelected: _libraryKey.currentState?.selected == null
+          onSelected: !_canPlaySelected
               ? null
               : () => _libraryKey.currentState?.playSelected(withOptions: true),
         ),
@@ -751,22 +758,31 @@ class _LauncherHomeState extends State<LauncherHome> {
         child: const Text('File'),
       ),
       SubmenuButton(
+        onOpen: () => setState(() {}),
         menuChildren: [
           MenuItemButton(
-            onPressed: () => _libraryKey.currentState?.playSelected(),
+            onPressed: !_canPlaySelected
+                ? null
+                : () => _libraryKey.currentState?.playSelected(),
             child: const Text('Play selected'),
           ),
           MenuItemButton(
-            onPressed: () =>
-                _libraryKey.currentState?.playSelected(withOptions: true),
+            onPressed: !_canPlaySelected
+                ? null
+                : () =>
+                      _libraryKey.currentState?.playSelected(withOptions: true),
             child: const Text('Play with options…'),
           ),
           MenuItemButton(
-            onPressed: () => _libraryKey.currentState?.editSelected(),
+            onPressed: _libraryKey.currentState?.selected == null
+                ? null
+                : () => _libraryKey.currentState?.editSelected(),
             child: const Text('Edit selected…'),
           ),
           MenuItemButton(
-            onPressed: () => _libraryKey.currentState?.deleteSelected(),
+            onPressed: _libraryKey.currentState?.selected == null
+                ? null
+                : () => _libraryKey.currentState?.deleteSelected(),
             child: const Text('Delete selected…'),
           ),
           const Divider(),
