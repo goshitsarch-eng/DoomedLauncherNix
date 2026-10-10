@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../platform/external_links.dart';
 
 int rowId(Map<String, dynamic> row, [String key = 'GameFileID']) =>
     (row[key] as num?)?.toInt() ?? int.tryParse('${row[key]}') ?? -1;
@@ -16,12 +16,10 @@ void showMessage(BuildContext context, String message) {
 
 Future<void> openLocalFile(BuildContext context, String path) async {
   try {
-    if (path.isEmpty ||
-        !await launchUrl(
-          Uri.file(path),
-          mode: LaunchMode.externalApplication,
-        )) {
-      throw const FileSystemException('No application could open this file.');
+    if (path.isEmpty || !await launchExternalUri(Uri.file(path))) {
+      if (context.mounted) {
+        showMessage(context, 'No application is registered to open this file.');
+      }
     }
   } catch (error) {
     if (context.mounted) showMessage(context, error.toString());

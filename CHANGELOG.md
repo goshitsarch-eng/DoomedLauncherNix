@@ -10,6 +10,15 @@
   compiled and bundled automatically for debug, profile and release modes.
 - Add Linux archives, an offline Flatpak build, a Windows portable ZIP and
   per-user installer, and universal macOS ZIP/DMG packaging.
+- Fix filename search, rename error recovery, selection focus and unavailable
+  Library commands found during the hands-on desktop audit.
+- Keep minimum-size and long-title dialogs usable, align management headings,
+  prevent launch notifications from covering session controls, and allow
+  closing after database startup failure.
+- Report missing Linux file/browser handlers instead of accepting GTK’s silent
+  launch acknowledgment; preserve Flatpak portal handling.
+- Add repeatable GTK/Rust desktop audits with native pickers, local HTTP failure
+  fixtures, keyboard and geometry coverage, and a corrupt-startup regression.
 - Require complete platform builds and checksummed artifacts before a matching
   version tag can publish a release. Alpha tags publish as prereleases.
 

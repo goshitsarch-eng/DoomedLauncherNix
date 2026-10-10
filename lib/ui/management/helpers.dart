@@ -76,19 +76,22 @@ class PageIntro extends StatelessWidget {
   final String description;
   final List<Widget> actions;
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 8),
-        Text(description),
-        if (actions.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Wrap(spacing: 12, runSpacing: 8, children: actions),
+  Widget build(BuildContext context) => SizedBox(
+    width: double.infinity,
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.headlineMedium),
+          const SizedBox(height: 8),
+          Text(description),
+          if (actions.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Wrap(spacing: 12, runSpacing: 8, children: actions),
+          ],
         ],
-      ],
+      ),
     ),
   );
 }

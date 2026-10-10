@@ -57,7 +57,7 @@ jobs:
         if: matrix.platform == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-14-dev xvfb
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-14-dev xvfb xauth dbus-x11 openbox xdotool fonts-noto-cjk fonts-noto-color-emoji
       - name: Install macOS Rust targets
         if: matrix.platform == 'macos'
         run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
@@ -93,7 +93,7 @@ jobs:
           python -m unittest discover -s scripts/tests -v
       - name: Exercise Linux desktop integration
         if: matrix.platform == 'linux'
-        run: xvfb-run -a flutter test integration_test/library_flow_test.dart -d linux
+        run: scripts/test_desktop.sh
       - name: Build and package native desktop
         run: python scripts/package.py
       - name: Verify macOS native application contract

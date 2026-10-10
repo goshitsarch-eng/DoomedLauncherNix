@@ -155,8 +155,13 @@ python3 -m unittest discover -s scripts/tests -v
 python3 scripts/check_release.py
 ```
 
-Run the repository's desktop integration tests with a real display or Xvfb as
-described in the test files. GUI, file portal, external engine and signed package
+On Linux, install `xvfb xauth dbus-x11 openbox xdotool` and run
+`scripts/test_desktop.sh`. It starts a desktop display when needed and exercises
+the actual GTK runner, native file pickers, and Rust core with disposable files
+and a local HTTP fixture. CJK/emoji fonts improve Unicode screenshot coverage.
+Set `DOOMEDLAUNCHER_QA_EVIDENCE` to an output directory and install ImageMagick
+to capture audit checkpoints. See [the hands-on audit](docs/HANDS_ON_AUDIT.md).
+GUI, file portal, external engine and signed package
 QA must run on the destination OS, in addition to headless unit tests. The macOS
 CI job also runs the existing Runner scheme's native XCTest target to check the
 application identity, Finder document registration and embedded Rust ABI.
