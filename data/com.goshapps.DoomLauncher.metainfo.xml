@@ -2,7 +2,7 @@
 <component type="desktop-application">
   <id>com.goshapps.DoomLauncher</id>
   <name>Doom Launcher</name>
-  <summary>Doom frontend and WAD library for Linux</summary>
+  <summary>Cross-platform Doom source port launcher and WAD library</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-only</project_license>
   <developer id="com.goshapps">
@@ -11,17 +11,16 @@
   <description>
     <p>
       Doom Launcher is a library for Doom engine games and mods, built with
-      Qt 6 and KDE's Kirigami framework so it looks and feels like a modern
-      KDE application, with light and dark color schemes. It detects GZDoom,
+      Flutter and a Rust core, with system, light and dark color schemes. It detects GZDoom,
       UZDoom and other source ports as native binaries, AppImages, Flatpaks
       or snaps, imports IWADs and mods, tracks play time, and downloads mods
       from the idgames archive.
     </p>
     <p>
-      This is DoomedLauncherNix, a Linux-focused fork of Doom Launcher by
+      This is DoomedLauncherNix, a cross-platform rewrite derived from Doom Launcher by
       Hobomaster22 (nstlaurent). The launcher concept, database layout and
       the Windows version are their work, shared under the GPL; this build
-      is a native Qt 6/Kirigami rewrite. Please support the original project.
+      uses Flutter for its desktop interface and Rust for its domain core. Please support the original project.
     </p>
     <p>
       Doom Launcher is an independent tool. It is not affiliated with or endorsed by
@@ -36,6 +35,9 @@
   <!-- The upstream project this is forked from. -->
   <url type="help">https://github.com/nstlaurent/DoomLauncher</url>
   <releases>
+    <release version="5.0.0-alpha.1" date="2026-10-09" type="development">
+      <description><p>Migrate the desktop frontend to Flutter and the domain core to Rust. Add Windows and macOS build and packaging workflows, preserve legacy libraries, and replace Linux packaging with the new application.</p></description>
+    </release>
     <release version="4.0.3" date="2026-09-06">
       <description><p>Repair library selection, mod load lists, IWAD imports, tag editing and archive downloads. Add tested x64 and ARM64 tar.gz and Flatpak releases.</p></description>
     </release>

@@ -1,162 +1,104 @@
-# DoomedLauncherNix
+# Doom Launcher
 
-A Doom frontend and WAD library for Linux, built with **Qt 6** and **KDE
-Kirigami** so it looks and feels like a modern KDE application — with
-light, dark and follow-system color schemes.
+A desktop library and source-port launcher for Doom, Heretic, Hexen and related
+games. Version **5.0.0-alpha.1** replaces the Linux Qt interface with Flutter/Dart
+and a Rust core, with native build targets for Linux, Windows and macOS.
 
-Current release: **4.0.3**.
+This migration is a prerelease. The Linux release build, native bridge and desktop
+workflows have been exercised; destination-platform installers, desktop portals and
+accessibility still require the checks recorded in [PLATFORM_SUPPORT.md](PLATFORM_SUPPORT.md).
+Configured CI jobs are not evidence that a release has passed those checks.
 
-> DoomedLauncherNix is a Linux-focused fork of
-> [Doom Launcher](https://github.com/nstlaurent/DoomLauncher) by
-> [Hobomaster22 (nstlaurent)](https://github.com/nstlaurent). The launcher
-> concept, database layout and the Windows version are their work, shared
-> under the GPL. Please support the original project. File issues for this
-> fork on [this tracker](https://github.com/goshitsarch-eng/DoomedLauncherNix/issues).
+![Doom Launcher library and details in dark mode](docs/screenshots/library-list-dark.png)
 
-## Features
+See [desktop QA and more screenshots](docs/QA.md) for the tested interactions,
+light mode, compact layout and play options. Screenshots use synthetic test data.
 
-- **Library** of WADs, pk3s and mods with list and tile views, search,
-  sorting, tags (tags can be their own tabs), ratings and comments
-- **Play dialog**: source port, IWAD, warp to map, skill, extra
-  parameters, additional files, demo recording, load latest save — with a
-  live command-line preview; per-file settings are remembered
-- **Source port detection**: GZDoom, UZDoom, VKDoom, dsda-doom, Crispy,
-  Chocolate, Woof!, Eternity and more — as native binaries, AppImages,
-  Flatpaks (`flatpak:org.zdoom.GZDoom`) or snaps (`snap:gzdoom`)
-- **Title screens as library art**: TITLEPIC/TITLE lumps are decoded
-  (classic Doom picture format, flats, or embedded PNGs, honoring the
-  wad's own PLAYPAL and MAPINFO `titlepage=` overrides) and shown in the
-  tile view and details panel
-- **Per-level statistics**: kills/items/secrets/time recorded after each
-  session — from `-levelstat` (dsda-doom, PrBoom+, Crispy, Woof!, …),
-  `-statdump` (Chocolate Doom family) or ZDoom-family save games — and
-  shown in the details panel
-- **Steam/GOG/Heroic/Lutris scan**: finds installed Doom, Doom II, Final
-  Doom, Heretic, Hexen, Strife and Doom 64, imports their IWADs and
-  expansion WADs (NERVE, SIGIL, Master Levels, …), and registers the
-  Doom 64 re-release binary as a source port
-- **idgames browser**: search the archive, download from a mirror and
-  auto-import into the library, straight from the app
-- **Play time tracking**, screenshots/saves/demos per entry, IWAD
-  management, first-run setup assistant
-- **Light and dark mode**: follows the system color scheme by default, or
-  force Breeze Light/Breeze Dark from Settings
-- Network shares: file dialogs go through the KDE/XDG portal, so
-  locations mounted via KIO (smb://, sftp:// …) open directly — no
-  "open with another app" detour
+## Your library and games
 
-## Downloads and automatic releases
+- Import files, folders or dropped files; manage IWADs, mods, tags, ratings,
+  comments and metadata. Search, sort and switch between list and artwork views.
+- Choose an engine, IWAD, map and skill; arrange additional mods, preview the
+  exact launch arguments, remember preferences, load the latest save and
+  record or replay demos.
+- Track sessions, elapsed play time and supported per-level engine statistics.
+  Attach screenshots, saves and demos; inspect associated text and title art.
+- Detect source ports and scan Steam, GOG/Heroic and Lutris installations.
+  Add native executables, macOS application bundles, or Linux Flatpak/Snap
+  engine identifiers manually.
+- Search idgames, download with progress and cancellation, import and play.
+- Use system, light or dark themes, keyboard shortcuts and resizable desktop
+  layouts. Window size, views and launch settings persist between sessions.
 
-Download the package for your architecture from
-[GitHub Releases](https://github.com/goshitsarch-eng/DoomedLauncherNix/releases).
-Every new release includes:
+Engines and game data are supplied separately. Use your own IWADs or
+[Freedoom](https://freedoom.github.io/). Doom 64 rerelease launches its installed
+native engine with custom arguments and play-time tracking; its own engine
+controls saves and gameplay options. PK7 passes directly to engines that support
+it; generic 7z extraction is not implemented. Associated save files can be
+opened externally; automatic loading uses the selected engine's latest-save
+support. Utility ports are available, while the legacy game-profile tables are
+preserved without introducing a separate profile editor.
 
-| CPU | Native binary archive | Flatpak bundle |
-| --- | --- | --- |
-| x64 | `DoomedLauncherNix-VERSION-linux-x86_64.tar.gz` | `DoomedLauncherNix-VERSION-x86_64.flatpak` |
-| ARM64 | `DoomedLauncherNix-VERSION-linux-aarch64.tar.gz` | `DoomedLauncherNix-VERSION-aarch64.flatpak` |
+See [engine compatibility](docs/ENGINE_COMPATIBILITY.md) for save directories,
+supported load arguments, statistics and verified engine behavior.
 
-Install a downloaded Flatpak with `flatpak install --user ./PACKAGE.flatpak`.
-The bundle references Flathub for its KDE runtime. The native tar.gz contains
-`bin/` and `share/`; extract it and run `./bin/doomedlauncher`. It requires host
-Qt/KDE runtime libraries compatible with the KDE 6.10 SDK, including Kirigami,
-qqc2-desktop-style and the SQLite driver. It is not a self-contained bundle.
-Use Flatpak on systems with older Qt/KDE libraries. Verify downloads with the
-included `SHA256SUMS-ARCH.txt` file: `sha256sum --check SHA256SUMS-ARCH.txt`.
+## Existing libraries
 
-The `Build, test and release` GitHub workflow runs on pushes and pull requests.
-Both architectures build natively and must pass CTest before publication. To
-publish the next version, update CMake, README, AppStream and release notes, then
-push to `development`. The workflow creates `vVERSION` and a GitHub release with
-all four packages. A matching `vVERSION` tag also triggers publication. Existing
-releases are left intact; ordinary pushes still build but do not replace assets.
-`python3 scripts/release_metadata.py` checks version consistency locally.
+Linux retains `$XDG_DATA_HOME/doomlauncher` (normally
+`~/.local/share/doomlauncher`), containing `DoomLauncher.sqlite` and `GameFiles`.
+The first schema migration checks the database and creates a
+`DoomLauncher.pre-flutter-UUID.sqlite` backup. Unknown settings and tables, IDs,
+tags, associations and play history are preserved. Windows and macOS use their
+platform application-support directories. `DOOMEDLAUNCHER_DATA_DIR` can select
+an explicit absolute library directory on any platform.
 
-## Library and launch controls
+Before moving a library between computers, close the launcher and copy the
+**whole library directory**. External absolute paths still point at their
+original locations; unavailable files remain visible for editing and recovery.
+New filenames are checked for portability. A same-name import with different
+contents is rejected instead of replacing existing content. Removing managed
+files places them in the library's `Trash` directory; deleting an external-path
+entry leaves its original file intact.
 
-- In **Play with Options**, choose library mods under **Additional files**, then
-  Add, Remove or Move up to arrange them. Additional mods load in listed order,
-  before the selected entry. **Remember these settings** preserves that order.
-- Use **Show Details** to reach screenshots, saves and statistics in a narrow
-  window. Selection remains attached to the same file when sorting; filtering
-  a selected file out clears its selection.
-- **Add IWADs** also works when the file already exists in the mod library.
-  Imports with identical filenames but different contents are rejected; rename
-  the incoming file first to keep both versions.
-- Use the play button beside an imported demo in Details to replay it with the
-  entry's remembered source port. The selected engine must support that demo.
-- Changes to tags in **Edit File** are applied with Save; Cancel discards them.
-- One idgames download runs at a time. Failed downloads do not leave a pending
-  request to launch an unrelated later download.
+## Build and run
 
-## Scope and remaining limitations
+Install Flutter 3.47.7, Rust 1.99.0 and the native dependencies described in
+[BUILDING.md](BUILDING.md), then:
 
-This review covers the Qt library, play options, imports, tags, settings and
-idgames paths. Older database tables do not imply complete upstream feature
-parity: utility launching and game-profile editing still have no Qt interface.
-The store scanner records a Doom 64 re-release executable, but the standard
-Doom source-port picker does not launch that separate engine type. Imported
-demos can be replayed from Details with the entry's remembered source port. Save associations still open with the desktop application; choosing an
-individual associated save does not load it through the launcher. Source-port
-specific game rendering and physical desktop/portal behavior require testing
-with those engines on a real system.
-
-## Existing libraries keep working
-
-The launcher uses the same SQLite database and data layout as previous
-releases (`$XDG_DATA_HOME/doomlauncher/DoomLauncher.sqlite` with
-`GameFiles/` next to it). If you used an earlier GTK build, your library,
-tags, source ports and play history are picked up as-is.
-
-## Building
-
-Dependencies: Qt ≥ 6.8 (Quick, Controls2, Sql, Network, Widgets,
-Concurrent), KDE Frameworks ≥ 6.6 (Kirigami, KCoreAddons, KI18n,
-KColorScheme, KArchive, KIconThemes), extra-cmake-modules, and at runtime
-qqc2-desktop-style plus breeze-icons. Building the regression tests also
-requires the Qt 6 Test module. The KDE 6.10 SDK provides all build-time
-dependencies used by the Flatpak manifest.
-
-```bash
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
-cmake --build build --parallel 2
-ctest --test-dir build --output-on-failure
-sudo cmake --install build
-doomedlauncher
+```sh
+flutter pub get --enforce-lockfile
+flutter run -d linux                 # or windows / macos on that operating system
+python3 scripts/package.py           # build and package the current native platform
 ```
 
-Use `-DBUILD_TESTING=OFF` only when producing a minimal package without the
-Qt Test development module. `doomedlauncher --version` reports the same
-4.0.3 version recorded in CMake and AppStream metadata.
+Flutter's native build invokes Cargo and bundles the Rust library automatically.
+See [BUILDING.md](BUILDING.md) for Flatpak, Windows installers, macOS universal
+bundles, offline builds and test commands. The executable supports
+`doomedlauncher --help`, `--version` and positional files to import.
 
-### Flatpak
+## Packages and development
 
-Version 4.0.2 restores host source-port detection and launch in the Qt build.
-Native binaries/AppImages, sibling Flatpaks and Snaps use one typed
-`flatpak-spawn --host --watch-bus` boundary, with the working directory
-passed using `--directory=`. Detection reads the host PATH and executable
-files, not the SDK's `/usr`; arguments are never evaluated by a shell.
-The existing `org.freedesktop.Flatpak` permission is required; no additional
-permissions were added. Failed host commands are reported and detection
-timeouts terminate the bridge. Native installations still run directly.
+Release automation builds Linux x86_64/aarch64 tarballs and Flatpaks, a Windows
+x64 portable ZIP and installer, and a macOS universal ZIP and DMG. Tagged
+releases publish only after the complete build/test matrix and checksum gate
+pass. Ordinary branch pushes do not publish. Existing downloads at
+[GitHub Releases](https://github.com/goshitsarch-eng/DoomedLauncherNix/releases)
+may still be the earlier Linux application; no 5.0 release is implied here.
 
-The additional regression targets cover IWAD promotion, rename references,
-archive collisions, download ordering and errors, library selection, metadata
-cancellation and QML page/dialog loading. GUI tests run offscreen.
+[ARCHITECTURE.md](ARCHITECTURE.md) explains the Dart/Rust boundary and ownership.
+[MIGRATION_AUDIT.md](MIGRATION_AUDIT.md) maps the old workflows to their current
+implementation and evidence. [CONTRIBUTING.md](CONTRIBUTING.md) describes checks,
+and [CHANGELOG.md](CHANGELOG.md) records changes.
+[Dependency review](docs/DEPENDENCIES.md) records package choices, licenses,
+maintenance considerations and the dependency security checks.
 
-The `hostprocess_test` CTest regression uses a strict host-bridge fixture
-to exercise detection, launch argv, host-only paths, errors and timeouts.
-It is not a physical game/rendering test.
+## Credits and license
 
-```bash
-flatpak-builder --user --install --force-clean build-flatpak flatpak/com.goshapps.DoomLauncher.yml
-flatpak run com.goshapps.DoomLauncher
-```
+DoomedLauncherNix is derived from
+[Doom Launcher](https://github.com/nstlaurent/DoomLauncher) by
+[Hobomaster22 (nstlaurent)](https://github.com/nstlaurent). The launcher concept,
+database layout and original Windows application are their work. This fork's
+issues belong on [its tracker](https://github.com/goshitsarch-eng/DoomedLauncherNix/issues).
 
-## License
-
-GPL-3.0-only, like the upstream project. See [LICENSE](LICENSE).
-
-Doom Launcher is an independent tool. It is not affiliated with or
-endorsed by id Software, and it ships no game data — supply your own
-IWAD, or use a free one such as [Freedoom](https://freedoom.github.io/).
+[GPL-3.0-only](LICENSE). Doom Launcher is independent of id Software and ships
+no commercial game data.

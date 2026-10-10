@@ -343,3 +343,10 @@ ReleaseBuild/
 /repo/
 /dist/
 /release-notes.md
+
+# Flutter and Rust generated outputs
+/.dart_tool/
+/.flutter-plugins
+/.flutter-plugins-dependencies
+/rust/target/
+**/ephemeral/

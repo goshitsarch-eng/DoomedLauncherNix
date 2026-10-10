@@ -1,3 +1,8 @@
+# Historical release notes
+
+These notes describe the earlier application. For the Flutter/Rust migration,
+see [CHANGELOG.md](CHANGELOG.md) and [MIGRATION_AUDIT.md](MIGRATION_AUDIT.md).
+
 # DoomedLauncherNix release notes
 
 This is a fork of [Doom Launcher](https://github.com/nstlaurent/DoomLauncher) by
